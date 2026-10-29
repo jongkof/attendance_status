@@ -39,6 +39,8 @@ function makeActions() {
     deleteGroup: vi.fn(ok),
     assignMember: vi.fn(ok),
     applyRule: vi.fn(ok),
+    setCell: vi.fn(ok),
+    setSkipWeek: vi.fn(ok),
   };
 }
 
@@ -49,7 +51,7 @@ function renderManager(overrides: Partial<RemoteSetup> = {}, actions = makeActio
   return { ...view, actions };
 }
 
-const cell = (name: string) => screen.getByRole("img", { name });
+const cell = (name: string) => screen.getByLabelText(name);
 
 describe("리모트 표", () => {
   test("순환 결과: 휴일 주는 리모트가 없고, 10/12 주는 조1이 화요일로 이어진다", () => {
@@ -75,6 +77,58 @@ describe("리모트 표", () => {
     const firstRow = container.querySelector("tbody tr")!;
     expect(firstRow.querySelector("th[scope=row]")).toHaveTextContent("곽ㅇㅇ");
     expect(firstRow.querySelector("th[scope=rowgroup]")?.textContent).toBe("");
+  });
+});
+
+describe("직접 수정과 주 체크", () => {
+  test("리모트 아닌 칸을 누르면 지정을, 리모트 칸을 누르면 해제를 서버에 보낸다", async () => {
+    const { actions } = renderManager();
+    fireEvent.click(cell("양ㅇㅇ 10/15 리모트 아님"));
+    await waitFor(() => expect(actions.setCell).toHaveBeenCalledWith("양ㅇㅇ", "2026-10-15", true));
+    await waitFor(() => expect(cell("양ㅇㅇ 10/13 리모트")).toBeEnabled());
+    fireEvent.click(cell("양ㅇㅇ 10/13 리모트"));
+    await waitFor(() => expect(actions.setCell).toHaveBeenCalledWith("양ㅇㅇ", "2026-10-13", false));
+  });
+
+  test("직접 지정한 칸은 리모트로 보이고 점 표시(직접 수정)가 붙는다. 한 주에 두 번도 된다", () => {
+    renderManager({ edits: [{ name: "양ㅇㅇ", date: "2026-10-15", kind: "add" }, { name: "홍ㅇㅇ", date: "2026-10-14", kind: "remove" }] });
+    expect(cell("양ㅇㅇ 10/13 리모트")).toBeInTheDocument();
+    expect(cell("양ㅇㅇ 10/15 리모트 (직접 수정)")).toBeInTheDocument();
+    expect(cell("홍ㅇㅇ 10/14 리모트 아님 (직접 수정)")).toBeInTheDocument();
+    expect(cell("양ㅇㅇ 10/13 리모트").querySelector("span")).toBeNull();
+    expect(cell("양ㅇㅇ 10/15 리모트 (직접 수정)").querySelector("span")).not.toBeNull();
+  });
+
+  test("미배정 팀원의 칸도 눌러 지정할 수 있다", async () => {
+    const { actions } = renderManager();
+    fireEvent.click(cell("곽ㅇㅇ 10/15 리모트 아님"));
+    await waitFor(() => expect(actions.setCell).toHaveBeenCalledWith("곽ㅇㅇ", "2026-10-15", true));
+  });
+
+  test("휴일 칸과 다른 기록이 있는 칸은 눌리지 않는다", () => {
+    renderManager();
+    expect(cell("양ㅇㅇ 10/9 휴일").tagName).not.toBe("BUTTON");
+    expect(cell("양ㅇㅇ 10/14 휴가").tagName).not.toBe("BUTTON");
+  });
+
+  test("주 체크를 켜면 바로 서버에 보내고, 휴일 주는 체크된 채 보이며 풀 수 있다", async () => {
+    const { actions } = renderManager();
+    const holidayWeek = screen.getByRole("checkbox", { name: "10/5 주 리모트 없음" });
+    expect(holidayWeek).toBeChecked();
+    expect(holidayWeek).toBeEnabled();
+    fireEvent.click(holidayWeek);
+    await waitFor(() => expect(actions.setSkipWeek).toHaveBeenCalledWith("2026-10-05", false));
+    fireEvent.click(screen.getByRole("checkbox", { name: "10/12 주 리모트 없음" }));
+    await waitFor(() => expect(actions.setSkipWeek).toHaveBeenCalledWith("2026-10-12", true));
+  });
+
+  test("푼 휴일 주는 리모트가 계획되고, 체크한 주는 리모트가 없다", () => {
+    renderManager({ skipWeeks: { "2026-10-05": false, "2026-10-12": true } });
+    expect(screen.getByRole("checkbox", { name: "10/5 주 리모트 없음" })).not.toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "10/12 주 리모트 없음" })).toBeChecked();
+    expect(cell("양ㅇㅇ 10/13 리모트 없는 주")).toBeInTheDocument();
+    // 푼 10/5 주는 10/5·10/9 휴일 외의 요일에 조의 리모트가 계획된다(조1은 기준 주 다음 주 월요일이 휴일이라 다른 조가 보인다).
+    expect(screen.getAllByLabelText(/10\/[678] 리모트$/).length).toBeGreaterThan(0);
   });
 });
 

@@ -15,6 +15,7 @@ export async function loadMonth(days: readonly string[]) {
     roster,
     blocks: plan.blocks,
     planned: plan.planned,
+    added: plan.added,
     dayMarks: dayMarksFor(days, plan.entries),
   };
 }

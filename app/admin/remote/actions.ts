@@ -3,7 +3,9 @@
 import { revalidatePath } from "next/cache";
 
 import { isAdmin } from "@/lib/admin/auth";
-import { checkRuleInput, checkRuleShape, mondayOf, type RemoteRule } from "@/lib/remote";
+import { calendarSets } from "@/lib/calendar";
+import { getCalendarEntries } from "@/lib/calendar/store";
+import { checkRuleInput, checkRuleShape, decideCellEdit, decideWeekOverride, mondayOf, type RemoteRule } from "@/lib/remote";
 import {
   addGroup,
   applyRule,
@@ -11,6 +13,8 @@ import {
   deleteGroup,
   getRemoteSetup,
   renameGroup,
+  setCellEdit,
+  setWeekOverride,
   type WriteResult,
 } from "@/lib/remote/store";
 
@@ -69,5 +73,36 @@ export async function applyRemoteRule(input: RemoteRule): Promise<WriteResult> {
       starts[String(group.id)] = input.starts[String(group.id)] ?? index % input.order.length;
     });
     return applyRule({ from: mondayOf(input.from), order: input.order, starts });
+  });
+}
+
+/** 휴일·행사 계산에 쓰는 달력 집합. 규칙 휴일은 date가 속한 해 앞뒤로 넉넉히 센다. */
+async function calendarAround(date: string) {
+  const year = Number(date.slice(0, 4));
+  return calendarSets(await getCalendarEntries(), [year - 1, year, year + 1]);
+}
+
+/** 그 사람·날짜의 리모트를 지정(remote=true)하거나 해제(false)한다. 규칙대로가 되면 직접 수정이 지워진다. */
+export async function setRemoteCell(name: string, date: string, remote: boolean): Promise<WriteResult> {
+  if (!(await isAdmin())) return { ok: false, error: LOGIN_REQUIRED };
+  if (typeof name !== "string" || typeof date !== "string" || typeof remote !== "boolean") {
+    return { ok: false, error: "요청이 올바르지 않습니다." };
+  }
+  return write(async () => {
+    const [setup, calendar] = await Promise.all([getRemoteSetup(), calendarAround(date)]);
+    const decision = decideCellEdit(setup, calendar, name, date, remote);
+    if (!decision.ok) return decision;
+    return setCellEdit(name, date, decision.kind);
+  });
+}
+
+/** 주(월요일)의 "리모트 없음"을 켜거나 끈다. 적용 확인 없이 바로 저장된다. */
+export async function setRemoteSkipWeek(week: string, skip: boolean): Promise<WriteResult> {
+  if (!(await isAdmin())) return { ok: false, error: LOGIN_REQUIRED };
+  if (typeof week !== "string" || typeof skip !== "boolean") return { ok: false, error: "요청이 올바르지 않습니다." };
+  return write(async () => {
+    const decision = decideWeekOverride(await calendarAround(week), week, skip);
+    if (!decision.ok) return decision;
+    return setWeekOverride(week, decision.skip);
   });
 }

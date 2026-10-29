@@ -56,6 +56,7 @@ export function AttendanceTable({
   dayMarks = {},
   blocks,
   planned = [],
+  added = [],
   showSummary = false,
   today,
   toggle,
@@ -70,6 +71,8 @@ export function AttendanceTable({
   blocks?: readonly RosterBlock[];
   /** 계획된 리모트 칸("이름|날짜"). 기록이나 미확인 표시가 없는 칸에 "리"로 채워진다. */
   planned?: readonly string[];
+  /** 그중 리모트 표에서 직접 추가한 칸("이름|날짜"). "리+"로 구별해 보인다. */
+  added?: readonly string[];
   /** 날짜별 집계 행을 아래에 붙인다(관리자용). */
   showSummary?: boolean;
   today: string;
@@ -84,6 +87,7 @@ export function AttendanceTable({
   );
   // 첫 열은 주 경계선이 필요 없다.
   const plannedCells = new Set(planned);
+  const addedCells = new Set(added);
   const hasStrip = blocks?.some((block) => block.name !== null) ?? false;
   const known = new Set(blocks?.flatMap((block) => block.members));
   const shown: RosterBlock[] = blocks
@@ -241,11 +245,12 @@ export function AttendanceTable({
                       !marked.has(`${name}|${day}`) ? (
                       <div
                         role="img"
-                        aria-label={`${name} ${day} 리모트(계획)`}
-                        title="계획된 리모트"
+                        aria-label={`${name} ${day} ${addedCells.has(`${name}|${day}`) ? "리모트(직접 추가)" : "리모트(계획)"}`}
+                        title={addedCells.has(`${name}|${day}`) ? "직접 추가한 리모트" : "계획된 리모트"}
                         className={cn(CELL_BOX, TYPE_COLOR.리모트)}
                       >
                         {TYPE_LETTER.리모트}
+                        {addedCells.has(`${name}|${day}`) ? "+" : null}
                       </div>
                     ) : toggle && day <= today ? (
                       <UnconfirmedToggleCell

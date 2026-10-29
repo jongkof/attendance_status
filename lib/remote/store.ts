@@ -2,10 +2,12 @@ import "server-only";
 
 import { supabaseAdmin } from "@/lib/supabase/server";
 
-import type { RemoteGroup, RemoteRule, RemoteSetup } from "./types";
+import type { RemoteEdit, RemoteGroup, RemoteRule, RemoteSetup } from "./types";
 
 type GroupRow = { id: number; name: string };
-type MemberRow = { name: string; remote_group_id: number | null };
+type MemberRow = { id: number; name: string; remote_group_id: number | null };
+type EditRow = { member_id: number; work_date: string; kind: "add" | "remove" };
+type WeekRow = { week: string; skip: boolean };
 type RuleRow = { from_week: string; order_steps: string[]; starts: Record<string, number> };
 
 export type WriteResult = { ok: true } | { ok: false; error: string };
@@ -13,14 +15,18 @@ export type WriteResult = { ok: true } | { ok: false; error: string };
 /** 조 편성과 적용된 규칙. 조는 sort_order, 조 안 명단은 팀원 표시 순서다. */
 export async function getRemoteSetup(): Promise<RemoteSetup> {
   const client = supabaseAdmin();
-  const [groups, members, rules] = await Promise.all([
+  const [groups, members, rules, edits, weeks] = await Promise.all([
     client.from("remote_groups").select("id, name").order("sort_order").overrideTypes<GroupRow[]>(),
-    client.from("members").select("name, remote_group_id").order("sort_order").overrideTypes<MemberRow[]>(),
+    client.from("members").select("id, name, remote_group_id").order("sort_order").overrideTypes<MemberRow[]>(),
     client.from("remote_rules").select("from_week, order_steps, starts").order("from_week").overrideTypes<RuleRow[], { merge: false }>(),
+    client.from("remote_cell_edits").select("member_id, work_date, kind").overrideTypes<EditRow[], { merge: false }>(),
+    client.from("remote_week_overrides").select("week, skip").overrideTypes<WeekRow[], { merge: false }>(),
   ]);
   if (groups.error) throw new Error(`리모트 조를 읽지 못했습니다: ${groups.error.message}`);
   if (members.error) throw new Error(`명단을 읽지 못했습니다: ${members.error.message}`);
   if (rules.error) throw new Error(`리모트 규칙을 읽지 못했습니다: ${rules.error.message}`);
+  if (edits.error) throw new Error(`리모트 직접 수정을 읽지 못했습니다: ${edits.error.message}`);
+  if (weeks.error) throw new Error(`리모트 없는 주를 읽지 못했습니다: ${weeks.error.message}`);
 
   const built: RemoteGroup[] = groups.data.map((group) => ({
     id: group.id,
@@ -34,6 +40,11 @@ export async function getRemoteSetup(): Promise<RemoteSetup> {
       .filter((member) => member.remote_group_id === null || !known.has(member.remote_group_id))
       .map((member) => member.name),
     rules: rules.data.map((rule): RemoteRule => ({ from: rule.from_week, order: rule.order_steps, starts: rule.starts })),
+    edits: edits.data.flatMap((edit): RemoteEdit[] => {
+      const member = members.data.find((row) => row.id === edit.member_id);
+      return member ? [{ name: member.name, date: edit.work_date, kind: edit.kind }] : [];
+    }),
+    skipWeeks: Object.fromEntries(weeks.data.map((week) => [week.week, week.skip])),
   };
 }
 
@@ -88,5 +99,33 @@ export async function applyRule(rule: RemoteRule): Promise<WriteResult> {
     p_starts: rule.starts,
   });
   if (error) return { ok: false, error: `규칙을 적용하지 못했습니다: ${error.message}` };
+  return { ok: true };
+}
+
+/**
+ * 칸의 직접 수정을 정한다. kind가 null이면 직접 수정을 지워 규칙대로 돌아간다.
+ */
+export async function setCellEdit(name: string, date: string, kind: "add" | "remove" | null): Promise<WriteResult> {
+  const client = supabaseAdmin();
+  const member = await client.from("members").select("id").eq("name", name).overrideTypes<{ id: number }[]>();
+  if (member.error) return { ok: false, error: `팀원을 찾지 못했습니다: ${member.error.message}` };
+  if (member.data.length === 0) return { ok: false, error: "팀원 명단에 없는 이름입니다." };
+  const memberId = member.data[0].id;
+  const result =
+    kind === null
+      ? await client.from("remote_cell_edits").delete().eq("member_id", memberId).eq("work_date", date)
+      : await client.from("remote_cell_edits").upsert({ member_id: memberId, work_date: date, kind });
+  if (result.error) return { ok: false, error: `리모트를 바꾸지 못했습니다: ${result.error.message}` };
+  return { ok: true };
+}
+
+/** 주의 리모트 없음 지정을 정한다. skip이 null이면 지정을 지워 휴일·행사 자동 판정으로 돌아간다. */
+export async function setWeekOverride(week: string, skip: boolean | null): Promise<WriteResult> {
+  const client = supabaseAdmin();
+  const result =
+    skip === null
+      ? await client.from("remote_week_overrides").delete().eq("week", week)
+      : await client.from("remote_week_overrides").upsert({ week, skip });
+  if (result.error) return { ok: false, error: `주 설정을 바꾸지 못했습니다: ${result.error.message}` };
   return { ok: true };
 }

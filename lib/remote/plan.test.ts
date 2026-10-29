@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 
-import { orderedRoster, plannedRemoteCells, rosterBlocks } from "./plan";
+import { orderedRoster, planRemoteCells, plannedRemoteCells, rosterBlocks } from "./plan";
 import type { RemoteSetup } from "./types";
 
 const setup: RemoteSetup = {
@@ -52,5 +52,67 @@ describe("계획된 리모트 칸", () => {
 
   test("규칙이 없으면 아무 칸도 채우지 않는다", () => {
     expect(plannedRemoteCells({ ...setup, rules: [] }, days, none).size).toBe(0);
+  });
+});
+
+describe("직접 수정과 주 체크", () => {
+  const week2 = ["2026-10-19", "2026-10-20", "2026-10-21", "2026-10-22"];
+
+  test("직접 추가한 칸이 더해지고 \"리+\" 대상이 되며, 한 주에 두 번도 된다", () => {
+    const edited: RemoteSetup = { ...setup, edits: [{ name: "양ㅇㅇ", date: "2026-10-22", kind: "add" }] };
+    const { planned, added } = planRemoteCells(edited, week2, none);
+    expect(planned.has("양ㅇㅇ|2026-10-20")).toBe(true);
+    expect(planned.has("양ㅇㅇ|2026-10-22")).toBe(true);
+    expect([...added]).toEqual(["양ㅇㅇ|2026-10-22"]);
+  });
+
+  test("직접 해제한 칸은 빠지고, 미배정 팀원도 직접 넣을 수 있다", () => {
+    const edited: RemoteSetup = {
+      ...setup,
+      edits: [
+        { name: "양ㅇㅇ", date: "2026-10-20", kind: "remove" },
+        { name: "김ㅇㅇ", date: "2026-10-21", kind: "add" },
+      ],
+    };
+    const { planned } = planRemoteCells(edited, week2, none);
+    expect(planned.has("양ㅇㅇ|2026-10-20")).toBe(false);
+    expect(planned.has("홍ㅇㅇ|2026-10-20")).toBe(true);
+    expect(planned.has("김ㅇㅇ|2026-10-21")).toBe(true);
+  });
+
+  test("체크한 주는 리모트가 없고 순환을 소모하지 않아 뒤 일정이 밀린다", () => {
+    const skipped: RemoteSetup = { ...setup, skipWeeks: { "2026-10-19": true } };
+    expect(plannedRemoteCells(skipped, week2, none).size).toBe(0);
+    // 10/12 주가 월(조1)·화(조2)였으므로, 건너뛴 다음 주(10/26)는 조1 화요일·조2 수요일로 이어진다.
+    expect(plannedRemoteCells(skipped, ["2026-10-26", "2026-10-27", "2026-10-28"], none)).toEqual(
+      new Set(["양ㅇㅇ|2026-10-27", "홍ㅇㅇ|2026-10-27", "이ㅇㅇ|2026-10-28"]),
+    );
+  });
+
+  test("체크한 주의 직접 추가는 보이지 않고, 푼 휴일·행사 주는 자동 건너뜀보다 우선해 순환을 소모한다", () => {
+    const event = { marked: new Set(["2026-10-21"]), holidays: new Set<string>() };
+    const unlocked: RemoteSetup = { ...setup, skipWeeks: { "2026-10-19": false } };
+    expect(plannedRemoteCells(unlocked, ["2026-10-19", "2026-10-20"], event)).toEqual(
+      new Set(["양ㅇㅇ|2026-10-20", "홍ㅇㅇ|2026-10-20"]),
+    );
+    const skippedWithAdd: RemoteSetup = {
+      ...setup,
+      skipWeeks: { "2026-10-19": true },
+      edits: [{ name: "양ㅇㅇ", date: "2026-10-22", kind: "add" }],
+    };
+    expect(plannedRemoteCells(skippedWithAdd, week2, none).size).toBe(0);
+  });
+
+  test("규칙을 바꿔도 직접 수정과 푼 주가 남는다", () => {
+    const reapplied: RemoteSetup = {
+      ...setup,
+      rules: [{ from: "2026-10-19", order: ["금", "월", "화", "수", "목"], starts: { "1": 0, "2": 1 } }],
+      edits: [{ name: "양ㅇㅇ", date: "2026-10-22", kind: "add" }],
+      skipWeeks: { "2026-10-26": false },
+    };
+    const event = { marked: new Set(["2026-10-27"]), holidays: new Set<string>() };
+    const cells = plannedRemoteCells(reapplied, [...week2, "2026-10-26"], event);
+    expect(cells.has("양ㅇㅇ|2026-10-22")).toBe(true);
+    expect([...cells].some((cell) => cell.endsWith("2026-10-26"))).toBe(true);
   });
 });
