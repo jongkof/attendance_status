@@ -7,7 +7,8 @@ import { PageShell } from "@/components/page-shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { requireAdmin } from "@/lib/admin/auth";
 import { parseMonth, todayInSeoul, weekdaysOfMonth } from "@/lib/attendance";
-import { getMonthView } from "@/lib/attendance/store";
+
+import { loadMonth } from "@/app/load-month";
 
 import { toggleUnconfirmed } from "./actions";
 
@@ -33,10 +34,10 @@ export default async function AdminPage({
   );
   const title = `${year}년 ${month}월 관리자 현황표`;
 
-  let view: Awaited<ReturnType<typeof getMonthView>> | null = null;
+  let view: Awaited<ReturnType<typeof loadMonth>> | null = null;
   let failure: string | null = null;
   try {
-    view = await getMonthView({ from: days[0], to: days[days.length - 1] });
+    view = await loadMonth(days);
   } catch (error) {
     failure = error instanceof Error ? error.message : "잠시 뒤 다시 시도해 주세요.";
   }
@@ -65,6 +66,7 @@ export default async function AdminPage({
         days={days}
         records={view.records}
         unconfirmed={view.unconfirmed}
+        dayMarks={view.dayMarks}
         today={today}
         toggle={toggleUnconfirmed}
       />

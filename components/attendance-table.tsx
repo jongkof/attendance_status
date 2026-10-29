@@ -1,8 +1,9 @@
 import { AttendanceCell } from "@/components/attendance-cell";
-import { CELL_BOX, TYPE_COLOR, UNCONFIRMED_BOX } from "@/components/attendance-style";
+import { CELL_BOX, HOLIDAY_BOX, TYPE_COLOR, UNCONFIRMED_BOX } from "@/components/attendance-style";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { UnconfirmedToggleCell } from "@/components/unconfirmed-toggle-cell";
 import { weekdayLabel, type AttendanceRecord, type UnconfirmedMark } from "@/lib/attendance";
+import type { DayMark } from "@/lib/calendar";
 import { cn } from "@/lib/utils";
 
 type ToggleResult = { ok: true; marked: boolean } | { ok: false; error: string };
@@ -21,6 +22,7 @@ export function AttendanceTable({
   days,
   records,
   unconfirmed = [],
+  dayMarks = {},
   today,
   toggle,
 }: {
@@ -28,6 +30,8 @@ export function AttendanceTable({
   days: readonly string[];
   records: readonly AttendanceRecord[];
   unconfirmed?: readonly UnconfirmedMark[];
+  /** 날짜별 휴일·행사 표시. 휴일 열은 근태를 보여 주지 않고 음영 칸이 된다. */
+  dayMarks?: Record<string, DayMark>;
   today: string;
   /** 주면 오늘과 지난 날짜의 일정 없는 칸을 눌러 미확인(?)을 켜고 끌 수 있다(관리자용). */
   toggle?: (name: string, date: string) => Promise<ToggleResult>;
@@ -62,8 +66,32 @@ export function AttendanceTable({
               )}
               aria-current={day === today ? "date" : undefined}
             >
-              <div>{Number(day.slice(8, 10))}</div>
-              <div className="text-xs font-normal text-muted-foreground">{weekdayLabel(day)}</div>
+              <div className={cn(dayMarks[day]?.holiday && "text-destructive")}>{Number(day.slice(8, 10))}</div>
+              <div
+                className={cn(
+                  "text-xs font-normal",
+                  dayMarks[day]?.holiday ? "text-destructive" : "text-muted-foreground",
+                )}
+              >
+                {weekdayLabel(day)}
+              </div>
+              {dayMarks[day]?.holiday ? (
+                <div
+                  title={dayMarks[day].holiday ?? undefined}
+                  className="truncate text-[10px] leading-tight font-normal text-destructive"
+                >
+                  {dayMarks[day].holiday}
+                </div>
+              ) : null}
+              {dayMarks[day]?.events.map((event) => (
+                <div
+                  key={event}
+                  title={event}
+                  className="mt-0.5 truncate rounded-sm bg-accent px-0.5 text-[10px] leading-tight font-normal text-accent-foreground"
+                >
+                  {event}
+                </div>
+              ))}
             </TableHead>
           ))}
         </TableRow>
@@ -82,7 +110,13 @@ export function AttendanceTable({
                   data-week-start={startsWeek(day, index) ? "" : undefined}
                   className={cn("p-0.5", startsWeek(day, index) && WEEK_BORDER, day === today && "bg-accent")}
                 >
-                  {record ? (
+                  {dayMarks[day]?.holiday ? (
+                    <div
+                      role="img"
+                      aria-label={`${name} ${day} ${dayMarks[day].holiday} 휴일`}
+                      className={cn(CELL_BOX, HOLIDAY_BOX)}
+                    />
+                  ) : record ? (
                     <AttendanceCell record={record} />
                   ) : toggle && day <= today ? (
                     <UnconfirmedToggleCell name={name} date={day} marked={marked.has(`${name}|${day}`)} toggle={toggle} />

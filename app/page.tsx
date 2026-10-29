@@ -6,7 +6,8 @@ import { MonthNav } from "@/components/month-nav";
 import { PageShell } from "@/components/page-shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { parseMonth, todayInSeoul, weekdaysOfMonth } from "@/lib/attendance";
-import { getMonthView } from "@/lib/attendance/store";
+
+import { loadMonth } from "@/app/load-month";
 
 export default async function Home({
   searchParams,
@@ -22,10 +23,10 @@ export default async function Home({
   const monthNav = <MonthNav basePath="/" year={year} month={month} />;
   const title = `${year}년 ${month}월 근태 현황`;
 
-  let view: Awaited<ReturnType<typeof getMonthView>> | null = null;
+  let view: Awaited<ReturnType<typeof loadMonth>> | null = null;
   let failure: string | null = null;
   try {
-    view = await getMonthView({ from: days[0], to: days[days.length - 1] });
+    view = await loadMonth(days);
   } catch (error) {
     failure = error instanceof Error ? error.message : "잠시 뒤 다시 시도해 주세요.";
   }
@@ -53,6 +54,7 @@ export default async function Home({
         days={days}
         records={view.records}
         unconfirmed={view.unconfirmed}
+        dayMarks={view.dayMarks}
         today={today}
       />
     </PageShell>

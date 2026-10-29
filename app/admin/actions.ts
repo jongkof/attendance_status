@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { isAdmin } from "@/lib/admin/auth";
+import { isHolidayDate } from "@/lib/calendar/store";
 import { todayInSeoul } from "@/lib/attendance";
 import { toggleUnconfirmed as toggle, type ToggleResult } from "@/lib/attendance/store";
 
@@ -12,7 +13,7 @@ const LOGIN_REQUIRED = "로그인이 필요합니다. 관리자 로그인 후 �
 export async function toggleUnconfirmed(name: string, date: string): Promise<ToggleResult> {
   if (!(await isAdmin())) return { ok: false, error: LOGIN_REQUIRED };
   try {
-    const result = await toggle(String(name), String(date), todayInSeoul());
+    const result = await toggle(String(name), String(date), todayInSeoul(), await isHolidayDate(String(date)));
     if (result.ok) {
       revalidatePath("/");
       revalidatePath("/admin");

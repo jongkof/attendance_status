@@ -112,9 +112,14 @@ export type ToggleResult = { ok: true; marked: boolean } | { ok: false; error: s
 
 /**
  * 일정 없는 칸의 미확인(?)을 켜고 끈다. 켤 때만 규칙을 검사한다(끄는 것은 언제나 가능).
- * today는 서울 시간 기준 오늘 날짜(YYYY-MM-DD)다.
+ * today는 서울 시간 기준 오늘 날짜(YYYY-MM-DD)이고, isHoliday는 그 날이 휴일인지다(호출하는 쪽이 달력에서 알아낸다).
  */
-export async function toggleUnconfirmed(name: string, date: string, today: string): Promise<ToggleResult> {
+export async function toggleUnconfirmed(
+  name: string,
+  date: string,
+  today: string,
+  isHoliday: boolean,
+): Promise<ToggleResult> {
   const client = supabase();
   // 명단, 미확인 표시, 근태 기록을 한 번에 조회한다(서로 기다릴 필요가 없다).
   const [member, mark, record] = await Promise.all([
@@ -136,7 +141,7 @@ export async function toggleUnconfirmed(name: string, date: string, today: strin
   if (record.error) return { ok: false, error: `근태 기록을 읽지 못했습니다: ${record.error.message}` };
 
   if (!mark.count) {
-    const check = checkCanMarkUnconfirmed({ date, today, hasRecord: !!record.count });
+    const check = checkCanMarkUnconfirmed({ date, today, hasRecord: !!record.count, isHoliday });
     if (!check.ok) return { ok: false, error: check.reason };
   }
 

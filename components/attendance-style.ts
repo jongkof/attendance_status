@@ -29,3 +29,6 @@ export const CELL_BOX = "flex h-10 w-full items-center justify-center rounded-sm
 /** 미확인(?) 칸: 색 없이 바탕에 점선 테두리만 둔 빈칸. */
 export const UNCONFIRMED_BOX =
   "border border-dashed border-foreground/50 bg-background text-sm font-bold text-muted-foreground";
+
+/** 휴일 칸: 근태를 보여 주지 않는 중립 음영. */
+export const HOLIDAY_BOX = "bg-muted";
