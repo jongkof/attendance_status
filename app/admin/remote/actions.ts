@@ -1,0 +1,73 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+
+import { isAdmin } from "@/lib/admin/auth";
+import { checkRuleInput, checkRuleShape, mondayOf, type RemoteRule } from "@/lib/remote";
+import {
+  addGroup,
+  applyRule,
+  assignMember,
+  deleteGroup,
+  getRemoteSetup,
+  renameGroup,
+  type WriteResult,
+} from "@/lib/remote/store";
+
+const LOGIN_REQUIRED = "로그인이 필요합니다. 관리자 로그인 후 다시 시도해 주세요.";
+
+async function write(run: () => Promise<WriteResult>): Promise<WriteResult> {
+  try {
+    const result = await run();
+    if (result.ok) revalidatePath("/admin/remote");
+    return result;
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "저장하지 못했습니다." };
+  }
+}
+
+/** 조를 맨 끝에 추가한다. */
+export async function addRemoteGroup(): Promise<WriteResult> {
+  if (!(await isAdmin())) return { ok: false, error: LOGIN_REQUIRED };
+  return write(addGroup);
+}
+
+export async function renameRemoteGroup(id: number, name: string): Promise<WriteResult> {
+  if (!(await isAdmin())) return { ok: false, error: LOGIN_REQUIRED };
+  const trimmed = String(name ?? "").trim();
+  if (!Number.isInteger(id) || trimmed === "") return { ok: false, error: "조 이름을 입력해 주세요." };
+  return write(() => renameGroup(id, trimmed));
+}
+
+/** 조를 지운다. 그 조의 팀원은 미배정이 된다. */
+export async function deleteRemoteGroup(id: number): Promise<WriteResult> {
+  if (!(await isAdmin())) return { ok: false, error: LOGIN_REQUIRED };
+  if (!Number.isInteger(id)) return { ok: false, error: "조를 찾지 못했습니다." };
+  return write(() => deleteGroup(id));
+}
+
+/** 팀원을 조에 배정한다. groupId가 null이면 미배정으로 옮긴다. */
+export async function assignRemoteMember(name: string, groupId: number | null): Promise<WriteResult> {
+  if (!(await isAdmin())) return { ok: false, error: LOGIN_REQUIRED };
+  if (groupId !== null && !Number.isInteger(groupId)) return { ok: false, error: "조를 찾지 못했습니다." };
+  return write(() => assignMember(String(name ?? ""), groupId));
+}
+
+/** 규칙을 적용한다. 기준 주(고른 날이 속한 주의 월요일) 이후에 있던 이전 규칙은 덮어쓴다. */
+export async function applyRemoteRule(input: RemoteRule): Promise<WriteResult> {
+  if (!(await isAdmin())) return { ok: false, error: LOGIN_REQUIRED };
+  const checkedInput = checkRuleInput(input);
+  if (!checkedInput.ok) return checkedInput;
+  return write(async () => {
+    const setup = await getRemoteSetup();
+    const filled = setup.groups.filter((group) => group.members.length > 0);
+    const shape = checkRuleShape(input.order.length, filled.length);
+    if (!shape.ok) return shape;
+    // 팀원이 있는 조는 시작 위치가 반드시 있어야 하므로 빠진 조는 순서대로 채운다.
+    const starts: Record<string, number> = {};
+    filled.forEach((group, index) => {
+      starts[String(group.id)] = input.starts[String(group.id)] ?? index % input.order.length;
+    });
+    return applyRule({ from: mondayOf(input.from), order: input.order, starts });
+  });
+}
