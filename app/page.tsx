@@ -1,67 +1,60 @@
-import Image from "next/image";
-import { ArrowUpRightIcon, TriangleIcon } from "lucide-react";
+import { CircleAlertIcon } from "lucide-react";
 
-import { buttonVariants } from "@/components/ui/button";
+import { AttendanceLegend } from "@/components/attendance-legend";
+import { AttendanceTable } from "@/components/attendance-table";
+import { MonthNav } from "@/components/month-nav";
+import { PageShell } from "@/components/page-shell";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { parseMonth, todayInSeoul, weekdaysOfMonth } from "@/lib/attendance";
+import { getMonthView } from "@/lib/attendance/store";
 
-export default function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ month?: string | string[] }>;
+}) {
+  const today = todayInSeoul();
+  const requested = (await searchParams).month;
+  const { year, month } =
+    (typeof requested === "string" ? parseMonth(requested) : null) ?? parseMonth(today.slice(0, 7))!;
+  const days = weekdaysOfMonth(year, month);
+
+  const monthNav = <MonthNav basePath="/" year={year} month={month} />;
+  const title = `${year}년 ${month}월 근태 현황`;
+
+  let view: Awaited<ReturnType<typeof getMonthView>> | null = null;
+  let failure: string | null = null;
+  try {
+    view = await getMonthView({ from: days[0], to: days[days.length - 1] });
+  } catch (error) {
+    failure = error instanceof Error ? error.message : "잠시 뒤 다시 시도해 주세요.";
+  }
+
+  if (view === null) {
+    return (
+      <PageShell title={title} actions={monthNav}>
+        <Alert variant="destructive">
+          <CircleAlertIcon />
+          <AlertTitle>근태 현황을 불러오지 못했습니다</AlertTitle>
+          <AlertDescription>{failure}</AlertDescription>
+        </Alert>
+      </PageShell>
+    );
+  }
+
   return (
-    <main className="flex flex-1 flex-col items-center justify-center px-6 py-24">
-      <div className="flex w-full max-w-xl flex-col gap-10">
-        <Image
-          className="h-5 w-[100px] dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col gap-4">
-          <h1 className="font-heading text-3xl font-semibold tracking-tight text-balance">
-            To get started, edit the{" "}
-            <code className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-[0.9em]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="text-lg text-muted-foreground">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-foreground underline underline-offset-4"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-foreground underline underline-offset-4"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <a
-            className={buttonVariants({ size: "lg" })}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <TriangleIcon data-icon="inline-start" />
-            Deploy Now
-          </a>
-          <a
-            className={buttonVariants({ size: "lg", variant: "outline" })}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-            <ArrowUpRightIcon data-icon="inline-end" />
-          </a>
-        </div>
-      </div>
-    </main>
+    <PageShell title={title} description="월–금 근무일만 보여 줍니다. 칸을 누르면 비고를 볼 수 있습니다." actions={monthNav}>
+      {view.records.length === 0 ? (
+        <p className="text-sm text-muted-foreground">이 달에 반영된 근태가 아직 없습니다.</p>
+      ) : null}
+      <AttendanceLegend />
+      <AttendanceTable
+        roster={view.roster}
+        days={days}
+        records={view.records}
+        unconfirmed={view.unconfirmed}
+        today={today}
+      />
+    </PageShell>
   );
 }

@@ -23,6 +23,20 @@
   --color-chart-3: var(--chart-3);
   --color-chart-2: var(--chart-2);
   --color-chart-1: var(--chart-1);
+  --color-att-work: var(--att-work);
+  --color-att-work-foreground: var(--att-work-foreground);
+  --color-att-leave: var(--att-leave);
+  --color-att-leave-foreground: var(--att-leave-foreground);
+  --color-att-half: var(--att-half);
+  --color-att-half-foreground: var(--att-half-foreground);
+  --color-att-remote: var(--att-remote);
+  --color-att-remote-foreground: var(--att-remote-foreground);
+  --color-att-trip: var(--att-trip);
+  --color-att-trip-foreground: var(--att-trip-foreground);
+  --color-att-training: var(--att-training);
+  --color-att-training-foreground: var(--att-training-foreground);
+  --color-att-checkup: var(--att-checkup);
+  --color-att-checkup-foreground: var(--att-checkup-foreground);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -49,6 +63,20 @@
 }
 
 :root {
+  --att-work: oklch(0.86 0.12 150);
+  --att-work-foreground: oklch(0.32 0.09 150);
+  --att-leave: oklch(0.87 0.09 25);
+  --att-leave-foreground: oklch(0.36 0.14 25);
+  --att-half: oklch(0.89 0.08 345);
+  --att-half-foreground: oklch(0.38 0.13 345);
+  --att-remote: oklch(0.9 0.12 85);
+  --att-remote-foreground: oklch(0.38 0.09 75);
+  --att-trip: oklch(0.87 0.08 250);
+  --att-trip-foreground: oklch(0.35 0.12 255);
+  --att-training: oklch(0.87 0.09 300);
+  --att-training-foreground: oklch(0.36 0.14 300);
+  --att-checkup: oklch(0.88 0.08 195);
+  --att-checkup-foreground: oklch(0.35 0.08 200);
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -84,6 +112,20 @@
 }
 
 .dark {
+  --att-work: oklch(0.42 0.1 150);
+  --att-work-foreground: oklch(0.93 0.07 150);
+  --att-leave: oklch(0.42 0.12 25);
+  --att-leave-foreground: oklch(0.93 0.05 25);
+  --att-half: oklch(0.43 0.11 345);
+  --att-half-foreground: oklch(0.93 0.05 345);
+  --att-remote: oklch(0.45 0.1 80);
+  --att-remote-foreground: oklch(0.94 0.07 85);
+  --att-trip: oklch(0.42 0.11 250);
+  --att-trip-foreground: oklch(0.93 0.05 250);
+  --att-training: oklch(0.42 0.12 300);
+  --att-training-foreground: oklch(0.93 0.05 300);
+  --att-checkup: oklch(0.42 0.08 195);
+  --att-checkup-foreground: oklch(0.93 0.05 195);
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
