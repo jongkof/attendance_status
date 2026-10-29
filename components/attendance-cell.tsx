@@ -1,6 +1,6 @@
 "use client";
 
-import { CELL_BOX, TYPE_COLOR } from "@/components/attendance-style";
+import { CELL_BOX, TYPE_COLOR, TYPE_LETTER } from "@/components/attendance-style";
 import { Popover, PopoverContent, PopoverHeader, PopoverTitle, PopoverTrigger } from "@/components/ui/popover";
 import { describeRecord, shortDate, type AttendanceRecord } from "@/lib/attendance";
 import { cn } from "@/lib/utils";
@@ -14,13 +14,12 @@ export function AttendanceCell({ record }: { record: AttendanceRecord }) {
         className={cn(
           CELL_BOX,
           TYPE_COLOR[record.type],
-          "cursor-pointer flex-col gap-0 text-xs leading-tight font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+          "cursor-pointer outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
         )}
         title={details ? `${label} · ${details}` : label}
         aria-label={`${record.name} ${shortDate(record.date)} ${label}`}
       >
-        <span>{record.type}</span>
-        {record.period ? <span className="text-[10px] font-normal">{record.period}</span> : null}
+        {TYPE_LETTER[record.type]}
       </PopoverTrigger>
       <PopoverContent className="w-72">
         <PopoverHeader>

@@ -1,6 +1,7 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
 
+import { AttendanceLegend } from "@/components/attendance-legend";
 import { AttendanceTable } from "@/components/attendance-table";
 import { weekdaysOfMonth, type AttendanceRecord } from "@/lib/attendance";
 
@@ -24,7 +25,7 @@ describe("월간 현황표 표시", () => {
   test("모든 날짜 열은 같은 너비이고, 일정이 없는 칸도 같은 구조의 칸을 가진다", () => {
     const { container } = renderTable();
     const widths = [...container.querySelectorAll("col")].slice(1).map((col) => (col as HTMLElement).style.width);
-    expect(new Set(widths)).toEqual(new Set(["4rem"]));
+    expect(new Set(widths)).toEqual(new Set(["2.5rem"]));
     for (const row of container.querySelectorAll("tbody tr")) {
       expect(row.querySelectorAll("td")).toHaveLength(days.length);
     }
@@ -36,7 +37,8 @@ describe("월간 현황표 표시", () => {
     expect(empty.className).toContain("bg-att-work");
     const trip = screen.getByRole("button", { name: /양ㅇㅇ 10\/30\(금\) 건강검진/ });
     expect(trip.className).toContain("bg-att-checkup");
-    expect(within(trip).getByText("건강검진")).toBeInTheDocument();
+    expect(trip).toHaveTextContent(/^건$/);
+    expect(trip.getAttribute("title")).toContain("건강검진");
   });
 
   test("오늘 열의 머리글을 구별해 표시한다", () => {
@@ -79,6 +81,15 @@ describe("관리자 표의 미확인 토글", () => {
     // 오늘보다 뒤 날짜와 근태 기록이 있는 칸은 버튼이 아니다.
     expect(screen.queryByRole("button", { name: /홍ㅇㅇ 2026-10-30/ })).toBeNull();
     expect(screen.queryByRole("button", { name: /양ㅇㅇ 2026-10-30/ })).toBeNull();
+  });
+
+  test("눌러서 바꿀 수 있는 칸은 포인터, 호버 테두리, 다음 상태 툴팁을 보인다", () => {
+    renderAdmin();
+    const work = screen.getByRole("button", { name: /홍ㅇㅇ 2026-10-29 출근/ });
+    expect(work.className).toContain("cursor-pointer");
+    expect(work.className).toContain("hover:ring-2");
+    expect(work).toHaveAttribute("title", "누르면 미확인으로");
+    expect(screen.getByRole("button", { name: /홍ㅇㅇ 2026-10-28 미확인/ })).toHaveAttribute("title", "누르면 출근으로");
   });
 
   test("칸을 누르면 그 이름과 날짜로 토글을 요청한다", async () => {
@@ -162,5 +173,51 @@ describe("휴일과 행사 표시", () => {
     renderMarked({ toggle: async () => ({ ok: true as const, marked: true }) });
     expect(screen.queryByRole("button", { name: /홍ㅇㅇ 2026-10-09/ })).toBeNull();
     expect(screen.getByRole("button", { name: /홍ㅇㅇ 2026-10-08 출근, 눌러서/ })).toBeInTheDocument();
+  });
+});
+
+describe("한 글자 칸 표기", () => {
+  const rec = (date: string, type: AttendanceRecord["type"], period: string | null = null, time: string | null = null, note: string | null = null): AttendanceRecord => ({
+    name: "양ㅇㅇ", date, type, period, time, note, receivedAt: "2026-10-26T09:00:00+09:00",
+  });
+  const typed: [AttendanceRecord, string, string][] = [
+    [rec("2026-10-01", "휴가"), "휴", "bg-att-leave"],
+    [rec("2026-10-02", "반차", "오전"), "반", "bg-att-half"],
+    [rec("2026-10-05", "반반차", "오후2"), "반", "bg-att-half"],
+    [rec("2026-10-06", "리모트"), "리", "bg-att-remote"],
+    [rec("2026-10-07", "출장"), "출", "bg-att-trip"],
+    [rec("2026-10-08", "교육"), "교", "bg-att-training"],
+    [rec("2026-10-12", "건강검진", null, "09:00", "내과"), "건", "bg-att-checkup"],
+  ];
+
+  test("근태 유형마다 한 글자와 유형 색이 보이고, 자세한 구분은 마우스 올림 설명에 있다", () => {
+    render(<AttendanceTable roster={roster} days={days} records={typed.map(([r]) => r)} today="2026-10-29" />);
+    for (const [record, letter, color] of typed) {
+      const cell = screen.getByRole("button", { name: new RegExp(`양ㅇㅇ ${record.date.slice(5, 7)}/${record.date.slice(8, 10)}`) });
+      expect(cell).toHaveTextContent(new RegExp(`^${letter}$`));
+      expect(cell.className).toContain(color);
+      expect(cell.getAttribute("title")).toContain(record.period ? `${record.type} ${record.period}` : record.type);
+    }
+    expect(screen.getByRole("button", { name: /10\/12/ }).getAttribute("title")).toContain("09:00 · 내과");
+  });
+
+  test("칸은 작은 정사각형이고 출근 칸에는 글자가 없다", () => {
+    renderTable();
+    const empty = screen.getByRole("img", { name: "홍ㅇㅇ 2026-10-29 출근" });
+    expect(empty.className).toContain("size-6");
+    expect(empty).toBeEmptyDOMElement();
+  });
+
+  test("범례가 같은 한 글자 표기를 쓴다", () => {
+    render(<AttendanceLegend />);
+    const letterOf = (label: string) => screen.getByText(label).closest("li")?.firstElementChild?.textContent?.trim();
+    expect(letterOf("출근(일정 없음)")).toBe("");
+    expect(letterOf("휴가")).toBe("휴");
+    expect(letterOf("반차·반반차")).toBe("반");
+    expect(letterOf("리모트")).toBe("리");
+    expect(letterOf("출장")).toBe("출");
+    expect(letterOf("교육")).toBe("교");
+    expect(letterOf("건강검진")).toBe("건");
+    expect(letterOf("미확인")).toBe("?");
   });
 });
