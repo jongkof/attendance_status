@@ -51,13 +51,13 @@ verification pass. Use `superseded` only after an approved replacement of a
 task with recorded completion history. Preserve its Execution evidence and name
 the replacement and reason under Revision; it is then terminal for that approved
 breakdown and outside the current delivery map. -->
-in-progress
+completed
 
 ## Execution
 
 <!-- Append concise evidence and preserve earlier entries when status changes.
 Execution Blocker is the current impediment for an active task, not a declared
 task dependency. In a superseded task, preserved entries are historical. -->
-- Verification: 단위 테스트(lib/remote/rotation.test.ts), 컴포넌트 테스트(components/remote-manager.test.tsx), vitest 전체 134개 통과. 비로그인 /admin/remote는 로그인 화면으로 이동(실제 서버 확인). 코드 리뷰 low 1회: 지적 1건(starts 누락 요청, 일반 사용 경로 아님)은 기록만 하고 고치지 않음.
-- Blocker: 실제 화면 검증(편성·적용·새로고침·10-19/10-26/11-02 주 이동·로그아웃 뒤 거절)은 사용자가 supabase/migrations/20261030000000_remote_rotation.sql을 Supabase SQL Editor에서 실행하고, 이 작업 폴더에 .env.local이 있어야 가능하다.
+- Verification: 단위 테스트(lib/remote/rotation.test.ts), 컴포넌트 테스트(components/remote-manager.test.tsx), vitest 전체 134개 통과. 비로그인 /admin/remote는 로그인 화면으로 이동(실제 서버 확인). 코드 리뷰 low 1회: 지적 1건(starts 누락 요청, 일반 사용 경로 아님)은 기록만 하고 고치지 않음. 실제 화면(SQL 실행 후, 개발 서버 3102): 마스킹 이름으로 5개 조 편성 → 기준 주 9/28 적용 → 10/5 주 리모트 없음 체크, 양ㅇㅇ(조1) 10/13·10/21·10/29·11/6 화·수·목·금 이동, 박ㅇㅇ(조5) 10/12 월 이어짐, 새로고침 뒤 유지, 조 삭제 시 미배정 22명, 로그아웃 뒤 /admin/remote가 로그인 화면으로 이동. 시험 조·규칙은 모두 삭제함.
+- Blocker: —
 - Revision: —
