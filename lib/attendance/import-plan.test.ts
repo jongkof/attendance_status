@@ -123,7 +123,7 @@ describe("저장된 기록과의 비교", () => {
     type: "휴가",
     period: null,
     time: null,
-    note: "병원 진료로 개인휴가",
+    note: "개인 사유 휴가",
     receivedAt: "2026-10-26T07:30:00+09:00",
   };
 
@@ -157,7 +157,7 @@ describe("저장된 기록과의 비교", () => {
   test("저장된 기록과 내용이 같으면 변화 없음이다(같은 JSON을 다시 넣어도 동일)", () => {
     const change = statusOf({
       type: "휴가",
-      note: "병원 진료로 개인휴가",
+      note: "개인 사유 휴가",
       receivedAt: "2026-10-26T07:30:00+09:00",
     });
     expect(change.status).toBe("unchanged");
@@ -176,7 +176,7 @@ describe("저장된 기록과의 비교", () => {
   test("수신 시각의 표기(시간대)가 달라도 같은 순간이면 같은 시각으로 비교한다", () => {
     const change = statusOf({
       type: "휴가",
-      note: "병원 진료로 개인휴가",
+      note: "개인 사유 휴가",
       receivedAt: "2026-10-25T22:30:00Z",
     });
     expect(change.status).toBe("unchanged");
