@@ -44,3 +44,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - 자동 코드 리뷰는 최대 1회, 가장 낮은 강도(`code-review low`)로만 돌린다. 리뷰어를 못 부르면 그 사실만 적고 완료로 본다.
 - 지적 중 스펙의 수용 기준을 깨거나 주 경로가 실제로 깨지는 것만 고친다. 나머지는 `docs/follow-ups/`에 한 줄로 남긴다. 재리뷰는 하지 않는다.
 - 스펙이 요구하지 않은 보안 하드닝·엣지케이스·성능 방어는 범위 밖이다.
+
+# 스택 컨텍스트: Supabase
+
+- 데이터 저장소는 Supabase다. Supabase 관련 작업을 시작할 때 공식 문서 색인 `https://supabase.com/llms.txt`를 그때그때 받아 필요한 문서를 찾는다. 저장소에 복사하지 않는다.
+- 받은 문서는 `package.json`과 `bun.lock`에 설치된 `@supabase/*` 버전과 맞춰 보고, 차이가 있으면 설치된 버전 기준으로 판단한다.
+- 공식 스킬 `supabase`, `supabase-postgres-best-practices`(`supabase/agent-skills`)를 함께 사용한다. 갱신은 위 "프로젝트 스킬 설치 방식"을 따른다.
