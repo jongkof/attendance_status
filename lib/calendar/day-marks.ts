@@ -28,3 +28,19 @@ export function dayMarksFor(days: readonly string[], entries: readonly CalendarE
     ]),
   );
 }
+
+/**
+ * 휴일·행사가 있는 날짜(marked)와 휴일인 날짜(holidays)의 집합. 규칙 휴일은 years에 든 해마다 더한다.
+ * 리모트 계획이 기준 주부터 센 주마다 이 집합을 읽는다.
+ */
+export function calendarSets(entries: readonly CalendarEntry[], years: Iterable<number>) {
+  const marked = new Set(entries.map((entry) => entry.date));
+  const holidays = new Set(entries.filter((entry) => entry.kind === "holiday").map((entry) => entry.date));
+  for (const year of years) {
+    for (const rule of ruleHolidays(year)) {
+      marked.add(rule.date);
+      holidays.add(rule.date);
+    }
+  }
+  return { marked, holidays };
+}

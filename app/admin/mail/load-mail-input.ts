@@ -1,8 +1,9 @@
 import "server-only";
 
+import { loadPlan } from "@/app/load-plan";
+
 import { getRecords, getRoster, getUnconfirmed } from "@/lib/attendance/store";
 import { dayMarksFor } from "@/lib/calendar";
-import { getCalendarEntries } from "@/lib/calendar/store";
 import type { MailInput } from "@/lib/mail";
 
 /** 복귀일을 계산하려면 그 날 이후의 일정이 필요하다. 이만큼 앞의 날짜까지 읽는다. */
@@ -18,21 +19,22 @@ function addDays(date: string, days: number): string {
  */
 export async function loadMailInput(date: string, origin: string): Promise<MailInput> {
   const to = addDays(date, LOOKAHEAD_DAYS);
-  const [roster, records, unconfirmed, entries] = await Promise.all([
+  const [roster, records, unconfirmed, plan] = await Promise.all([
     getRoster(),
     getRecords({ from: date, to }),
     getUnconfirmed({ from: date, to: date }),
-    getCalendarEntries({ from: date, to }),
+    loadPlan([date]),
   ]);
 
   const days = Array.from({ length: LOOKAHEAD_DAYS + 1 }, (_, index) => addDays(date, index));
-  const marks = dayMarksFor(days, entries);
+  const marks = dayMarksFor(days, plan.entries);
 
   return {
     date,
     roster,
     records: records.map(({ name, date: recordDate, type, period, time }) => ({ name, date: recordDate, type, period, time })),
     unconfirmedNames: unconfirmed.map((mark) => mark.name),
+    plannedNames: plan.planned.filter((cell) => cell.endsWith(`|${date}`)).map((cell) => cell.slice(0, -date.length - 1)),
     holiday: marks[date].holiday,
     events: marks[date].events,
     holidayDates: new Set(days.filter((day) => marks[day].holiday)),

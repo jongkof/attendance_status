@@ -101,11 +101,18 @@ export function buildMail(input: MailInput): MailContent {
   }
   const unconfirmed = new Set(input.unconfirmedNames.filter((name) => roster.has(name) && !byName.has(name)));
 
+  // 계획된 리모트는 기록도 미확인 표시도 없는 사람에게만 적용되고, 기록이 있으면 기록이 우선한다.
+  const planned = new Set(input.plannedNames ?? []);
+  const categoryOf = (name: string): Category => {
+    const record = byName.get(name);
+    return !record && planned.has(name) ? "remote" : classify(record);
+  };
+
   const counts: Record<Category, number> = { present: 0, remote: 0, absent: 0, "morning-half": 0, "afternoon-half": 0 };
   let unconfirmedCount = 0;
   for (const name of input.roster) {
     if (unconfirmed.has(name)) unconfirmedCount += 1;
-    else counts[classify(byName.get(name))] += 1;
+    else counts[categoryOf(name)] += 1;
   }
 
   const summary: MailSummary = {
@@ -132,7 +139,7 @@ export function buildMail(input: MailInput): MailContent {
   };
   const peopleIn = (category: Category, describe: (record: MailRecord) => string | null): MailPerson[] =>
     input.roster
-      .filter((name) => !unconfirmed.has(name) && classify(byName.get(name)) === category)
+      .filter((name) => !unconfirmed.has(name) && categoryOf(name) === category)
       .map((name) => ({ name, suffix: describe(byName.get(name)!) }));
 
   const absentGroups: MailGroup[] = ABSENT_ORDER.map((type) => ({

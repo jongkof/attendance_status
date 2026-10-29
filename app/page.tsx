@@ -55,6 +55,8 @@ export default async function Home({
         records={view.records}
         unconfirmed={view.unconfirmed}
         dayMarks={view.dayMarks}
+        blocks={view.blocks}
+        planned={view.planned}
         today={today}
       />
     </PageShell>
