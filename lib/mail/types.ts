@@ -17,6 +17,8 @@ export type MailInput = {
   records: readonly MailRecord[];
   /** 그 날 미확인(?)으로 표시된 사람의 이름 */
   unconfirmedNames: readonly string[];
+  /** 그 날 계획된 리모트 대상자. 근태 기록이나 미확인 표시가 있는 사람에게는 적용되지 않는다. */
+  plannedNames?: readonly string[];
   /** 그 날이 휴일이면 휴일 이름(여럿이면 " · "로 이은 값), 아니면 null */
   holiday: string | null;
   /** 그 날의 행사 이름 */

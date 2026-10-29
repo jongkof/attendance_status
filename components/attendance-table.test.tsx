@@ -221,3 +221,63 @@ describe("한 글자 칸 표기", () => {
     expect(letterOf("미확인")).toBe("?");
   });
 });
+
+describe("조 편성과 계획된 리모트", () => {
+  const blocks = [
+    { name: null, members: ["홍ㅇㅇ"] },
+    { name: "1조", members: ["양ㅇㅇ"] },
+  ];
+
+  test("조 편성 순서로 그리고 미배정은 라벨 없이 맨 위, 조에는 세로 띠 라벨과 굵은 구분선이 붙는다", () => {
+    const { container } = render(
+      <AttendanceTable roster={["양ㅇㅇ", "홍ㅇㅇ"]} blocks={blocks} days={days} records={[]} today="2026-10-29" />,
+    );
+    const rows = [...container.querySelectorAll("tbody tr")];
+    expect(rows.map((row) => row.querySelector('th[scope="row"]')?.textContent)).toEqual(["홍ㅇㅇ", "양ㅇㅇ"]);
+    const strips = [...container.querySelectorAll('th[scope="rowgroup"]')];
+    expect(strips.map((strip) => strip.textContent)).toEqual(["", "1조"]);
+    expect(rows.every((row) => row.className.includes("border-t-2"))).toBe(true);
+  });
+
+  test("블록이 없으면 띠도 구분선도 없이 이전 모양이다", () => {
+    const { container } = renderTable();
+    expect(container.querySelector('th[scope="rowgroup"]')).toBeNull();
+    expect(container.querySelector("tbody tr")?.className ?? "").not.toContain("border-t-2");
+  });
+
+  test("계획된 리모트 칸은 '리'로 채워지고, 기록이 있으면 기록이 보이고, 휴일은 음영이다", () => {
+    render(
+      <AttendanceTable
+        roster={["양ㅇㅇ", "홍ㅇㅇ"]}
+        days={days}
+        records={records}
+        planned={["홍ㅇㅇ|2026-10-27", "양ㅇㅇ|2026-10-30", "홍ㅇㅇ|2026-10-09"]}
+        dayMarks={{ "2026-10-09": { holiday: "한글날", events: [] } }}
+        today="2026-10-29"
+      />,
+    );
+    const planned = screen.getByRole("img", { name: "홍ㅇㅇ 2026-10-27 리모트(계획)" });
+    expect(planned).toHaveTextContent(/^리$/);
+    expect(planned.className).toContain("bg-att-remote");
+    expect(screen.queryByRole("img", { name: /양ㅇㅇ 2026-10-30 리모트/ })).toBeNull();
+    expect(screen.getByRole("button", { name: /양ㅇㅇ 10\/30\(금\) 건강검진/ })).toBeInTheDocument();
+    expect(screen.queryByRole("img", { name: /홍ㅇㅇ 2026-10-09 리모트/ })).toBeNull();
+  });
+
+  test("집계 행은 계획된 리모트를 리모트에 세고 합이 명단 인원수와 같다", () => {
+    const { container } = render(
+      <AttendanceTable
+        roster={["양ㅇㅇ", "홍ㅇㅇ"]}
+        days={["2026-10-27"]}
+        records={[]}
+        planned={["홍ㅇㅇ|2026-10-27"]}
+        showSummary
+        today="2026-10-29"
+      />,
+    );
+    const counts = Object.fromEntries(
+      [...container.querySelectorAll("tfoot tr")].map((row) => [row.querySelector("th")?.textContent, Number(row.querySelector("td")?.textContent)]),
+    );
+    expect(counts).toEqual({ 리모트: 1, 출근: 1, 부재: 0, "오전 반차": 0, 미확인: 0 });
+  });
+});

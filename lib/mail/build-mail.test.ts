@@ -278,3 +278,34 @@ describe("본문 HTML과 글자", () => {
     expect(out.text).not.toContain("병원");
   });
 });
+
+describe("계획된 리모트", () => {
+  const workday = (overrides: Partial<MailInput> = {}) => buildMail(input({ date: "2026-10-27", ...overrides }));
+
+  test("리모트 구역과 집계와 제목이 같은 수를 쓴다", () => {
+    const mail = workday({ plannedNames: ["강ㅇㅇ", "한ㅇㅇ"], records: [rec("류ㅇㅇ", "2026-10-27", "리모트")] });
+    if (mail.kind !== "workday") throw new Error("근무일 본문이어야 합니다");
+    expect(mail.summary.remote).toBe(3);
+    expect(mail.sections.find((section) => section.id === "remote")?.count).toBe(3);
+    expect(mail.subject).toContain("리모트 3");
+    const { present, remote, absent, morningHalf, unconfirmed, total } = mail.summary;
+    expect(present + remote + absent + morningHalf + unconfirmed).toBe(total);
+  });
+
+  test("공지 기록과 겹치면 한 번만 세고, 휴가 기록이 있으면 기록이 우선한다", () => {
+    const mail = workday({
+      plannedNames: ["강ㅇㅇ", "한ㅇㅇ"],
+      records: [rec("강ㅇㅇ", "2026-10-27", "리모트"), rec("한ㅇㅇ", "2026-10-27", "휴가")],
+    });
+    if (mail.kind !== "workday") throw new Error("근무일 본문이어야 합니다");
+    expect(mail.summary.remote).toBe(1);
+    expect(mail.summary.absent).toBe(1);
+  });
+
+  test("계획이 없으면 리모트 구역이 나오지 않고 이전과 같다", () => {
+    const mail = workday();
+    if (mail.kind !== "workday") throw new Error("근무일 본문이어야 합니다");
+    expect(mail.sections.some((section) => section.id === "remote")).toBe(false);
+    expect(mail.subject).not.toContain("리모트");
+  });
+});
