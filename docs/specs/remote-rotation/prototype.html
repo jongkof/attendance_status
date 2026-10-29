@@ -1,0 +1,792 @@
+<!--
+  prototype shell: the review chrome every prototype starts from.
+
+  Keep this comment in the prototype you grow from here: it is the contract,
+  and later turns work from that file rather than from this one.
+
+  Contract (extend product screens; keep the review shell):
+  - Product:  .sh-stage contains only end-user product UI. Keep review notes,
+               rationale, instructions, and approval controls in conversation.
+  - Screens:  <section data-screen="slug" data-title="Label"> inside .sh-stage.
+               The selector, arrow keys, and #hash routing build themselves.
+               Use one option per product destination or distinct surface,
+               named by its product role. Keep baselines, variants, comparison
+               labels, steps, indexes, and progress out of names and states.
+               Links may use href="#slug".
+  - States:   "Default" is automatic. A screen declares only representative
+               presets in data-states="Empty,Error". Use natural, screen-specific
+               names. Reserve presets for important multi-step results, forced
+               data or errors, or materially different structure; keep one-click
+               and transient states as interactions. Use data-when="Empty" on
+               preset-only elements. Call prototypeShell.setState("Name") on
+               entry and setState("Default") on exit, including when repeated
+               actions cross a preset condition.
+  - Viewport: "vp (m)" cycles full / 390 / 768. The 390 preset is a
+               fixed-height, internally scrolling phone frame. Start a
+               mobile-first prototype by adding class="sh-vp-390" to <body>
+               (or a bootstrap classList.add before the chrome script runs).
+  - Pinning:  keep in-frame bars (tab bars, CTAs) inside the phone with
+               position: sticky; position: fixed pins to the browser window.
+  - Tokens:   replace the project-tokens block with project tokens copied
+               verbatim. Map differing names to --background, --foreground, and
+               --font afterwards; replace network fonts with a system stack and
+               note that substitution. Without a design system, keep this
+               palette as the finished style. When the project ships dark
+               tokens, copy them under .sh-theme-dark, which the shell sets
+               on both the root element and body, so :root.sh-theme-dark and
+               body.sh-theme-dark work too. A .dark class or a
+               prefers-color-scheme media query copied verbatim would follow
+               the reviewer's system instead of the toggle.
+  - Theme:    the light / dark switch (t) changes the product surface only.
+               It appears only when a .sh-theme-dark rule declares dark tokens,
+               so a prototype without them carries no theme control. Prototypes
+               always load light; the review bar keeps its own dark styling in
+               both themes so it still reads as chrome.
+  - Placeholders: .wf-pic stands in for pictures the prototype has no real
+               files for. Use real text everywhere text belongs.
+
+  - Chrome:   Keep exactly the screen selector, selected-screen state selector,
+               viewport cycle, and theme toggle.
+
+  Self-contained by design: no build, no framework, no network.
+
+  Notes for this file: tokens are copied from app/globals.css (:root and .dark -> .sh-theme-dark).
+  Font is a system stack (project font not embedded). All data is dummy; names are masked.
+-->
+<meta charset="utf-8">
+<title>리모트 로테이션 시안</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  /* ── project tokens (app/globals.css) ── */
+  :root {
+    --att-work: oklch(0.86 0.12 150);
+    --att-work-foreground: oklch(0.32 0.09 150);
+    --att-leave: oklch(0.87 0.09 25);
+    --att-leave-foreground: oklch(0.36 0.14 25);
+    --att-half: oklch(0.89 0.08 345);
+    --att-half-foreground: oklch(0.38 0.13 345);
+    --att-remote: oklch(0.9 0.12 85);
+    --att-remote-foreground: oklch(0.38 0.09 75);
+    --att-trip: oklch(0.87 0.08 250);
+    --att-trip-foreground: oklch(0.35 0.12 255);
+    --att-training: oklch(0.87 0.09 300);
+    --att-training-foreground: oklch(0.36 0.14 300);
+    --att-checkup: oklch(0.88 0.08 195);
+    --att-checkup-foreground: oklch(0.35 0.08 200);
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.145 0 0);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.145 0 0);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.145 0 0);
+    --primary: oklch(0.205 0 0);
+    --primary-foreground: oklch(0.985 0 0);
+    --secondary: oklch(0.97 0 0);
+    --secondary-foreground: oklch(0.205 0 0);
+    --muted: oklch(0.97 0 0);
+    --muted-foreground: oklch(0.556 0 0);
+    --accent: oklch(0.97 0 0);
+    --accent-foreground: oklch(0.205 0 0);
+    --destructive: oklch(0.577 0.245 27.325);
+    --border: oklch(0.922 0 0);
+    --input: oklch(0.922 0 0);
+    --ring: oklch(0.708 0 0);
+    --radius: 0.625rem;
+    --font: system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  }
+  .sh-theme-dark {
+    color-scheme: dark;
+    --att-work: oklch(0.42 0.1 150);
+    --att-work-foreground: oklch(0.93 0.07 150);
+    --att-leave: oklch(0.42 0.12 25);
+    --att-leave-foreground: oklch(0.93 0.05 25);
+    --att-half: oklch(0.43 0.11 345);
+    --att-half-foreground: oklch(0.93 0.05 345);
+    --att-remote: oklch(0.45 0.1 80);
+    --att-remote-foreground: oklch(0.94 0.07 85);
+    --att-trip: oklch(0.42 0.11 250);
+    --att-trip-foreground: oklch(0.93 0.05 250);
+    --att-training: oklch(0.42 0.12 300);
+    --att-training-foreground: oklch(0.93 0.05 300);
+    --att-checkup: oklch(0.42 0.08 195);
+    --att-checkup-foreground: oklch(0.93 0.05 195);
+    --background: oklch(0.145 0 0);
+    --foreground: oklch(0.985 0 0);
+    --card: oklch(0.205 0 0);
+    --card-foreground: oklch(0.985 0 0);
+    --popover: oklch(0.205 0 0);
+    --popover-foreground: oklch(0.985 0 0);
+    --primary: oklch(0.922 0 0);
+    --primary-foreground: oklch(0.205 0 0);
+    --secondary: oklch(0.269 0 0);
+    --secondary-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.269 0 0);
+    --muted-foreground: oklch(0.708 0 0);
+    --accent: oklch(0.269 0 0);
+    --accent-foreground: oklch(0.985 0 0);
+    --destructive: oklch(0.704 0.191 22.216);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.556 0 0);
+  }
+
+  /* ── review chrome (sh-*): keep; extend product styles elsewhere ── */
+  * { box-sizing: border-box }
+  body {
+    margin: 0; padding: 0 0 40px;
+    background: var(--background, #f6f6f6); color: var(--foreground, #3a3a3a);
+    font-family: var(--font, system-ui, sans-serif);
+  }
+  .sh-bar {
+    position: sticky; top: 0; z-index: 999;
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+    padding: 8px 12px; background: #191a1c; color: #d7d7d7;
+    font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  .sh-bar b, .sh-control-label { color: #8a8f98; font-weight: 500 }
+  .sh-control { display: inline-flex; gap: 5px; align-items: center }
+  .sh-bar button {
+    border: 1px solid #3a3d42; background: none; color: inherit;
+    font: inherit; padding: 2px 9px; border-radius: 99px; cursor: pointer;
+  }
+  .sh-bar select {
+    width: 170px; border: 1px solid #3a3d42; background: #232428; color: inherit;
+    font: inherit; padding: 3px 28px 3px 9px; border-radius: 7px; cursor: pointer;
+    color-scheme: dark;
+  }
+  #sh-screen { width: 190px }
+  .sh-bar button.on { background: #d7d7d7; color: #191a1c; border-color: #d7d7d7 }
+  .sh-theme { display: inline-flex; border: 1px solid #3a3d42; border-radius: 99px; overflow: hidden }
+  .sh-theme button { border: 0; border-radius: 0; padding: 2px 10px }
+  .sh-spacer { flex: 1 }
+  .sh-stage { max-width: 960px; margin: 0 auto; padding: 12px 16px 0 }
+  [hidden] { display: none !important }
+
+  /* viewport presets */
+  .sh-vp-390 .sh-stage {
+    max-width: 390px; background: var(--background, #f6f6f6);
+    border: 10px solid #191a1c; border-radius: 28px;
+    padding: 16px 12px; height: min(844px, calc(100dvh - 52px));
+    overflow-y: auto; margin-top: 12px;
+  }
+  .sh-vp-768 .sh-stage {
+    max-width: 768px; border: 1px solid #c4c4c4; border-radius: 12px;
+    padding: 16px; margin-top: 12px;
+  }
+
+  /* placeholders */
+  .wf-pic  { border-radius: 4px; background:
+             repeating-linear-gradient(45deg, #e9e9e9, #e9e9e9 6px, #f2f2f2 6px, #f2f2f2 12px) }
+  .sh-theme-dark .wf-pic { background: repeating-linear-gradient(45deg,
+             color-mix(in srgb, var(--foreground) 16%, transparent) 0 6px,
+             color-mix(in srgb, var(--foreground) 8%, transparent) 6px 12px) }
+
+  /* ── product styles ── */
+  .sh-stage { max-width: 1280px; container-type: inline-size }
+  .sh-vp-390 .sh-stage { max-width: 390px }
+  .sh-vp-768 .sh-stage { max-width: 768px }
+  .page { display: grid; gap: 1rem; grid-template-columns: minmax(0, 1fr) }
+  .two > *, .cols > * { min-width: 0 }
+  .ph h1 { font-size: 1.25rem; font-weight: 600; margin: 0 }
+  .ph p { color: var(--muted-foreground); font-size: .875rem; margin: .25rem 0 0 }
+  .ph a { color: inherit }
+  .bar { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: center; justify-content: space-between }
+  .row { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center }
+  .card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem }
+  .card h2 { font-size: 1rem; font-weight: 600; margin: 0 }
+  .card .desc { color: var(--muted-foreground); font-size: .8125rem; margin: .25rem 0 .75rem }
+  .btn, select.fld, input.fld {
+    height: 2rem; padding: 0 .65rem; border: 1px solid var(--input); border-radius: calc(var(--radius) * .8);
+    background: var(--background); color: var(--foreground); font: inherit; font-size: .8125rem;
+  }
+  .btn { cursor: pointer }
+  .btn:hover { background: var(--accent) }
+  .btn.on { background: var(--primary); color: var(--primary-foreground); border-color: var(--primary) }
+  .btn.sm { height: 1.5rem; padding: 0 .4rem; font-size: .75rem }
+  .btn:disabled { opacity: .45; cursor: not-allowed }
+  input.fld { width: 7rem }
+  .muted { color: var(--muted-foreground) }
+  .small { font-size: .75rem }
+  .legend { display: flex; flex-wrap: wrap; gap: .5rem 1rem; font-size: .75rem; color: var(--muted-foreground); list-style: none; padding: 0; margin: 0 }
+  .legend li { display: flex; align-items: center; gap: .375rem }
+  .sw { width: .75rem; height: .75rem; border-radius: calc(var(--radius) * .6); display: inline-flex; align-items: center; justify-content: center; font-size: 8px }
+
+  /* attendance table: copied visual language of components/attendance-table.tsx */
+  .tbl-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius) }
+  table.att { border-collapse: collapse; table-layout: fixed; font-size: .875rem; background: var(--background) }
+  .att th, .att td { border-bottom: 1px solid var(--border) }
+  .att thead th { padding: .25rem .125rem; text-align: center; font-weight: 500; vertical-align: top; background: var(--background) }
+  .att thead th.nm { text-align: left; padding: .5rem; position: sticky; left: 0; z-index: 10 }
+  .att tbody th[scope=row] { position: sticky; left: 0; z-index: 10; background: var(--background); text-align: left; padding: 0 .5rem; font-weight: 500; white-space: nowrap }
+  .att td { padding: .125rem; position: relative }
+  .att .wk { border-left: 2px solid color-mix(in oklab, var(--foreground) 25%, transparent) }
+  .att .today { background: var(--accent) }
+  .att thead th.today { color: var(--accent-foreground) }
+  .att .dn { line-height: 1.4 }
+  .att .wd { font-size: .75rem; font-weight: 400; color: var(--muted-foreground) }
+  .att .red, .att .red .wd { color: var(--destructive) }
+  .att .hn { font-size: 10px; line-height: 1.15; font-weight: 400; color: var(--destructive); overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+  .att .ev { margin-top: 2px; font-size: 10px; line-height: 1.15; font-weight: 400; background: var(--accent); color: var(--accent-foreground); border-radius: calc(var(--radius) * .6); padding: 0 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+  .att .today .ev { background: var(--background) }
+  .att tr.grp th, .att tr.grp td { background: var(--muted); border-top: 2px solid color-mix(in oklab, var(--foreground) 25%, transparent); height: 1.75rem; padding: 0 .125rem; text-align: center }
+  .att tr.grp th { text-align: left; padding: 0 .5rem; font-weight: 600; z-index: 10 }
+  .att tr.grp th .cnt { font-weight: 400; color: var(--muted-foreground); margin-left: .25rem; font-size: .75rem }
+  .chip { display: inline-block; padding: 0 .5rem; border-radius: 99px; font-size: .6875rem; font-weight: 500; line-height: 1.2rem; background: var(--att-remote); color: var(--att-remote-foreground); white-space: nowrap }
+  .chip.none { background: var(--background); color: var(--muted-foreground); border: 1px dashed color-mix(in oklab, var(--foreground) 40%, transparent); line-height: 1.05rem }
+  .cell { display: flex; flex-direction: column; height: 2.5rem; width: 100%; align-items: center; justify-content: center; border-radius: calc(var(--radius) * .6); font: inherit; font-size: .75rem; line-height: 1.1; font-weight: 500; border: 0; padding: 0; color: inherit; background: none; appearance: none }
+  .cell.sm { height: 1.75rem }
+  .cell .sub { font-size: 10px; font-weight: 400 }
+  .t-work { background: var(--att-work); color: var(--att-work-foreground) }
+  .t-leave { background: var(--att-leave); color: var(--att-leave-foreground) }
+  .t-half { background: var(--att-half); color: var(--att-half-foreground) }
+  .t-remote { background: var(--att-remote); color: var(--att-remote-foreground) }
+  .t-trip { background: var(--att-trip); color: var(--att-trip-foreground) }
+  .t-training { background: var(--att-training); color: var(--att-training-foreground) }
+  .t-checkup { background: var(--att-checkup); color: var(--att-checkup-foreground) }
+  .unk { border: 1px dashed color-mix(in oklab, var(--foreground) 50%, transparent); background: var(--background); font-size: .875rem; font-weight: 700; color: var(--muted-foreground) }
+  .holiday { background: var(--muted) }
+  .tog { cursor: pointer; position: relative }
+  .tog:hover { box-shadow: 0 0 0 2px color-mix(in oklab, var(--foreground) 45%, transparent); z-index: 30 }
+  .tog:focus-visible { outline: 3px solid color-mix(in oklab, var(--ring) 50%, transparent) }
+  .tog::after {
+    content: attr(data-tip); position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+    white-space: nowrap; background: var(--foreground); color: var(--background); font-size: .6875rem; font-weight: 500;
+    padding: .2rem .45rem; border-radius: calc(var(--radius) * .6); pointer-events: none; opacity: 0; z-index: 40;
+  }
+  .tog:hover::after { opacity: 1 }
+  .att tbody tr:first-child .tog::after, .att tr.grp + tr .tog::after { bottom: auto; top: calc(100% + 6px) }
+
+  /* vertical group strip */
+  .att tbody th[scope=row] { left: calc(2rem - 1px); box-shadow: -1px 0 0 var(--background) }
+  .att th.strip { position: sticky; left: 0; z-index: 10; background: var(--muted); writing-mode: vertical-rl; text-align: center; font-weight: 600; width: 2rem; padding: 0; border-right: 1px solid var(--border) }
+  .att th.strip.un { background: var(--background) }
+  .att tr.gs > * { border-top: 2px solid color-mix(in oklab, var(--foreground) 25%, transparent) }
+  .att tbody tr.gs:first-child > * { border-top: 0 }
+  .att thead tr.skiprow th { background: var(--background); border-top: 1px solid var(--border); vertical-align: middle }
+  .att thead tr.skiprow th.nm { text-align: left; font-size: .75rem; padding: .25rem .5rem }
+  .att.sm td { padding: .2rem 0 }
+  .sq { display: block; width: 1.5rem; height: 1.5rem; margin: 0 auto; border-radius: 4px; border: 1px solid var(--input); background: var(--background); padding: 0; font: inherit; font-size: 10px; line-height: 1.4rem; text-align: center; color: var(--muted-foreground); appearance: none }
+  .sq.t-work,.sq.t-leave,.sq.t-half,.sq.t-remote,.sq.t-trip,.sq.t-training,.sq.t-checkup { border-color: transparent; font-weight: 600; font-size: 11px }
+  .sq.t-work { background: var(--att-work); color: var(--att-work-foreground) }
+  .sq.t-leave { background: var(--att-leave); color: var(--att-leave-foreground) }
+  .sq.t-half { background: var(--att-half); color: var(--att-half-foreground) }
+  .sq.t-remote { background: var(--att-remote); color: var(--att-remote-foreground) }
+  .sq.t-trip { background: var(--att-trip); color: var(--att-trip-foreground) }
+  .sq.t-training { background: var(--att-training); color: var(--att-training-foreground) }
+  .sq.t-checkup { background: var(--att-checkup); color: var(--att-checkup-foreground) }
+  .sq.unk { border: 1px dashed color-mix(in oklab, var(--foreground) 50%, transparent); background: var(--background); font-weight: 700; font-size: .8125rem; color: var(--muted-foreground) }
+  .sq .plus { font-style: normal; font-size: 9px; vertical-align: top }
+  .sq.on { background: var(--att-remote); border-color: transparent }
+  .sq.holi, .sq.rec { background: var(--muted); border-color: transparent }
+  .sq.ed::before { content: ""; position: absolute; top: -2px; right: -2px; width: 6px; height: 6px; border-radius: 50%; background: var(--destructive) }
+  .sq.tog { cursor: pointer }
+  .att.sm .tog::after { bottom: calc(100% + 4px) }
+
+  /* remote admin */
+  .cols { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)) }
+  .gcard { border: 1px solid var(--border); border-radius: var(--radius); padding: .75rem; display: grid; gap: .5rem; align-content: start; background: var(--background) }
+  .gcard.un { border-style: dashed }
+  .gcard .hd { display: flex; gap: .4rem; align-items: center; justify-content: space-between }
+  .members { display: flex; flex-wrap: wrap; gap: .35rem; min-height: 1.75rem }
+  .m { height: 1.75rem; padding: 0 .6rem; border-radius: 99px; border: 1px solid var(--input); background: var(--secondary); color: var(--secondary-foreground); font: inherit; font-size: .8125rem; cursor: pointer }
+  .m:hover { background: var(--accent) }
+  .m.sel { background: var(--primary); color: var(--primary-foreground); border-color: var(--primary) }
+  .callout { border: 1px solid var(--border); background: var(--muted); border-radius: var(--radius); padding: .5rem .75rem; font-size: .8125rem }
+  .steps { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center }
+  .step { display: inline-flex; align-items: center; gap: .15rem; border: 1px solid var(--input); border-radius: var(--radius); padding: .2rem .3rem .2rem .55rem; background: var(--background); font-size: .875rem }
+  .step .no { color: var(--muted-foreground); font-size: .6875rem; margin-right: .2rem }
+  .step.rest { border-style: dashed }
+  .arrow { color: var(--muted-foreground) }
+  .warn { color: var(--destructive); font-size: .8125rem }
+  table.pv { border-collapse: collapse; width: 100%; font-size: .8125rem }
+  .pv th, .pv td { border-bottom: 1px solid var(--border); padding: .35rem .5rem; text-align: center }
+  .pv thead th { color: var(--muted-foreground); font-weight: 500 }
+  .pv td.w { text-align: left; white-space: nowrap }
+  .pv tr.skipr td { background: var(--muted); color: var(--muted-foreground) }
+  .pv tr.base td.w { box-shadow: inset 3px 0 0 var(--foreground) }
+  .pv .badge { display: inline-block; font-size: .6875rem; border-radius: 99px; padding: 0 .4rem; background: var(--accent); color: var(--accent-foreground); margin-left: .25rem }
+  .pv .tag { display: block; font-size: .6875rem; color: var(--muted-foreground); font-weight: 400 }
+
+  /* extra remote comparison */
+  .two { display: grid; gap: 1rem; grid-template-columns: 1fr 1fr; align-items: start }
+  .roster { position: relative; display: grid; gap: .5rem }
+  .rgrp { display: flex; flex-wrap: wrap; gap: .35rem; align-items: center }
+  .rgrp .gl { width: 2.5rem; font-size: .75rem; font-weight: 600 }
+  .nb { display: inline-flex; gap: .3rem; align-items: center; height: 1.9rem; padding: 0 .55rem; border-radius: calc(var(--radius) * .8); border: 1px solid var(--input); background: var(--background); font: inherit; font-size: .8125rem; cursor: pointer }
+  .nb:hover, .nb.open { background: var(--accent); border-color: var(--foreground) }
+  .nb .chip { line-height: 1rem; padding: 0 .3rem; font-size: .625rem }
+  .pop { position: absolute; z-index: 20; width: 16.5rem; background: var(--popover); color: var(--popover-foreground); border: 1px solid var(--border); border-radius: var(--radius); padding: .75rem; box-shadow: 0 6px 24px color-mix(in oklab, var(--foreground) 18%, transparent); display: grid; gap: .5rem }
+  .pop h3 { margin: 0; font-size: .875rem; font-weight: 600 }
+  .days { display: grid; grid-template-columns: repeat(5, 1fr); gap: .25rem }
+  .days .cell { height: 2.75rem; cursor: pointer }
+  .days .cell.dis { cursor: default }
+  .add { border: 1px dashed transparent; color: transparent; cursor: pointer }
+  .add:hover { border-color: color-mix(in oklab, var(--foreground) 50%, transparent); color: var(--muted-foreground); background: var(--background) }
+  .extra { outline: 2px dashed color-mix(in oklab, var(--att-remote-foreground) 70%, transparent); outline-offset: -2px; cursor: pointer }
+  @container (max-width: 760px) { .two { grid-template-columns: 1fr } }
+</style>
+
+<header class="sh-bar">
+  <b>proto</b>
+  <label class="sh-control"><span class="sh-control-label">screen</span><select id="sh-screen"></select></label>
+  <span class="sh-spacer"></span>
+  <label class="sh-control"><span class="sh-control-label">state</span><select id="sh-state"></select></label>
+  <button id="sh-vp">vp: full (m)</button>
+  <div class="sh-theme" id="sh-theme" role="group" aria-label="theme (t)" hidden>
+    <button data-theme="light">light</button><button data-theme="dark">dark</button>
+  </div>
+</header>
+
+<main class="sh-stage">
+  <!-- 1. 관리자 현황표 -->
+  <section data-screen="status-table" data-title="관리자 현황표">
+    <div class="page">
+      <div class="bar">
+        <div class="ph">
+          <h1>근태 현황 · 관리자</h1>
+          <p>계획된 리모트가 조별로 미리 채워진 월간 표입니다. 오늘(10/29)과 지난 칸을 눌러 아침 확인 결과를 반영합니다. <a href="#remote-admin">리모트 관리 →</a></p>
+        </div>
+        <div class="row month-switch"></div>
+      </div>
+      <ul class="legend" aria-label="범례">
+        <li><span class="sw t-work" style="width:1rem;height:1rem;font-size:10px;font-weight:600"></span>출근(일정 없음)</li>
+        <li><span class="sw t-leave" style="width:1rem;height:1rem;font-size:10px;font-weight:600">휴</span>휴가</li>
+        <li><span class="sw t-half" style="width:1rem;height:1rem;font-size:10px;font-weight:600">반</span>반차·반반차</li>
+        <li><span class="sw t-remote" style="width:1rem;height:1rem;font-size:10px;font-weight:600">리</span>리모트 (+ 추가)</li>
+        <li><span class="sw t-trip" style="width:1rem;height:1rem;font-size:10px;font-weight:600">출</span>출장</li>
+        <li><span class="sw t-training" style="width:1rem;height:1rem;font-size:10px;font-weight:600">교</span>교육</li>
+        <li><span class="sw t-checkup" style="width:1rem;height:1rem;font-size:10px;font-weight:600">건</span>건강검진</li>
+        <li><span class="sw unk">?</span>미확인</li>
+        <li><span class="sw holiday"></span><span style="color:var(--destructive)">휴일</span></li>
+        <li><span class="small" style="background:var(--accent);color:var(--accent-foreground);border-radius:4px;padding:0 4px">행사</span>행사</li>
+      </ul>
+      <div class="row small muted">
+        <span>눌러서 바꾸기:</span>
+        <span class="chip">리모트</span><span class="arrow">→</span>
+        <span class="chip" style="background:var(--att-work);color:var(--att-work-foreground)">출근</span><span class="arrow">→</span>
+        <span class="chip none">?</span><span class="arrow">→</span>
+        <span class="chip">리모트</span>
+        <span>· 리모트가 아닌 칸은 출근 ↔ ?</span>
+      </div>
+      <div id="tbl-host"></div>
+    </div>
+  </section>
+
+  <!-- 2. 리모트 관리 -->
+  <section data-screen="remote-admin" data-title="리모트 관리" data-states="처음 편성">
+    <div class="page">
+      <div class="ph">
+        <h1>리모트 관리</h1>
+        <p>조를 편성하고 순환 규칙을 정하면 아래 표에 리모트가 미리 채워집니다. 표에서는 칸을 눌러 사람·날짜별로 직접 고칠 수 있습니다. <a href="#status-table">현황표 보기 →</a></p>
+      </div>
+      <div class="callout" data-when="처음 편성" hidden>아직 편성된 조가 없습니다. 팀원을 눌러 선택한 뒤, 옮길 조의 “여기로 옮기기”를 누르세요.</div>
+      <div class="card"><h2>조 편성</h2><p class="desc">팀원을 누르면 선택되고, 옮길 조의 버튼을 누르면 그 조로 들어갑니다. 조 이름은 바로 고칠 수 있습니다.</p><div id="grp-host"></div></div>
+      <div class="card"><h2>순환 규칙</h2><p class="desc">요일 순서, 기준 주, 조별 시작 요일을 정합니다. 적용하면 기준 주 이후만 바뀌고 그 이전 주는 기존 규칙을 유지합니다.</p><div id="rule-host"></div></div>
+      <div class="card">
+        <div class="bar"><div><h2>리모트 표</h2><p class="desc" style="margin-bottom:0">날짜 아래 체크박스를 켜면 그 주는 리모트가 없고 순환도 소모하지 않습니다.</p></div><div class="row month-switch"></div></div>
+        <ul class="legend" style="margin:.75rem 0">
+          <li><span class="sw t-remote"></span>리모트</li>
+          <li><span class="sw" style="border:1px solid var(--input);background:var(--background)"></span>리모트 아님</li>
+          <li><span class="sw" style="background:var(--destructive);width:.4rem;height:.4rem;border-radius:50%"></span>직접 고친 칸</li>
+          <li><span class="sw holiday"></span>휴일·리모트 없는 주·다른 근태 기록(기록이 우선)</li>
+        </ul>
+        <div id="adm-host"></div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+  const stage = document.querySelector('.sh-stage');
+  const screens = [...stage.querySelectorAll('[data-screen]')];
+  const screenSelect = document.getElementById('sh-screen');
+  const stateSelect = document.getElementById('sh-state');
+  const vpBtn = document.getElementById('sh-vp');
+  const themeCtl = document.getElementById('sh-theme');
+  const themeBtns = [...themeCtl.querySelectorAll('button')];
+  let current = null;
+  let currentStates = [];
+
+  screens.forEach(s => {
+    const option = document.createElement('option');
+    option.textContent = s.dataset.title || s.dataset.screen;
+    option.value = s.dataset.screen;
+    screenSelect.append(option);
+  });
+  screenSelect.onchange = () => show(screenSelect.value);
+
+  function show(slug) {
+    current = screens.find(s => s.dataset.screen === slug) || screens[0];
+    screens.forEach(s => s.hidden = s !== current);
+    screenSelect.value = current.dataset.screen;
+    history.replaceState(null, '', '#' + current.dataset.screen);
+    buildStates();
+  }
+
+  function buildStates() {
+    const declared = (current.dataset.states || '').split(',').map(x => x.trim()).filter(Boolean);
+    currentStates = ['Default', ...declared.filter(name => name !== 'Default')];
+    stateSelect.innerHTML = '';
+    currentStates.forEach(name => {
+      const option = document.createElement('option');
+      option.textContent = name;
+      option.value = name;
+      stateSelect.append(option);
+    });
+    applyState('Default');
+  }
+
+  function applyState(name) {
+    const active = currentStates.includes(name) ? name : 'Default';
+    current.querySelectorAll('[data-when]').forEach(el => {
+      el.hidden = !el.dataset.when.split(',').map(x => x.trim()).includes(active);
+    });
+    stateSelect.value = active;
+  }
+  stateSelect.onchange = () => applyState(stateSelect.value);
+
+  window.prototypeShell = {
+    showScreen: show,
+    setState: applyState,
+    getScreen: () => current?.dataset.screen,
+    getState: () => stateSelect.value
+  };
+
+  const VPS = ['full', '390', '768'];
+  let vp = VPS.find(v => document.body.classList.contains('sh-vp-' + v)) || 'full';
+  function applyVp() {
+    VPS.forEach(v => document.body.classList.toggle('sh-vp-' + v, v === vp && v !== 'full'));
+    vpBtn.textContent = 'vp: ' + vp + ' (m)';
+    vpBtn.classList.toggle('on', vp !== 'full');
+  }
+  vpBtn.onclick = () => { vp = VPS[(VPS.indexOf(vp) + 1) % VPS.length]; applyVp(); };
+  applyVp();
+
+  const hasDark = [...document.styleSheets].some(sheet => {
+    try {
+      return [...sheet.cssRules].some(rule => (rule.selectorText || '')
+        .split(',').some(part => /\.sh-theme-dark$/.test(part.trim())));
+    } catch { return false }
+  });
+  let dark = false;
+  function applyTheme() {
+    document.documentElement.classList.toggle('sh-theme-dark', dark);
+    document.body.classList.toggle('sh-theme-dark', dark);
+    themeBtns.forEach(b => b.classList.toggle('on', (b.dataset.theme === 'dark') === dark));
+  }
+  themeCtl.hidden = !hasDark;
+  themeBtns.forEach(b => b.onclick = () => { dark = b.dataset.theme === 'dark'; applyTheme(); });
+  applyTheme();
+
+  addEventListener('keydown', e => {
+    if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+    const i = screens.indexOf(current);
+    if (e.key === 'ArrowRight') show(screens[(i + 1) % screens.length].dataset.screen);
+    if (e.key === 'ArrowLeft') show(screens[(i - 1 + screens.length) % screens.length].dataset.screen);
+    if (e.key === 'm') vpBtn.click();
+    if (e.key === 't' && !themeCtl.hidden) { dark = !dark; applyTheme(); }
+  });
+
+  addEventListener('hashchange', () => show(location.hash.slice(1)));
+  show(location.hash.slice(1));
+</script>
+
+<script>
+  /* ───────── dummy data and rotation rules ───────── */
+  const WD = ['월', '화', '수', '목', '금'];
+  const REST = '리모트 없음';
+  const TODAY = '2026-10-29';
+  const pad = n => String(n).padStart(2, '0');
+  const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const parse = s => new Date(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10));
+  const addDays = (s, n) => { const d = parse(s); d.setDate(d.getDate() + n); return iso(d); };
+  const wdIndex = s => (parse(s).getDay() + 6) % 7;
+  const mondayOf = s => addDays(s, -wdIndex(s));
+  const md = s => `${+s.slice(5, 7)}/${+s.slice(8, 10)}`;
+  const mod = (a, m) => ((a % m) + m) % m;
+  const WEEKS = Array.from({ length: 14 }, (_, i) => addDays('2026-09-28', i * 7));
+  const CAL = {
+    '2026-10-05': { kind: 'holiday', name: '개천절 대체공휴일' },
+    '2026-10-09': { kind: 'holiday', name: '한글날' },
+    '2026-10-22': { kind: 'event', name: '비움데이' },
+    '2026-11-25': { kind: 'event', name: '야유회' },
+  };
+  const ALL = ['양ㅇㅇ','홍ㅇㅇ','이ㅇㅇ','김ㅇㅇ','박ㅇㅇ','곽ㅇㅇ','최ㅇㅇ','임ㅇㅇ','김ㅇㅇ2','이ㅇㅇ2','심ㅇㅇ','최ㅇㅇ2','이ㅇㅇ3','장ㅇㅇ','오ㅇㅇ','유ㅇㅇ','김ㅇㅇ3','강ㅇㅇ','한ㅇㅇ','류ㅇㅇ','김ㅇㅇ4','윤ㅇㅇ'];
+  const defaultGroups = () => [
+    { id: 'g1', name: '1조', members: ALL.slice(0, 5) },
+    { id: 'g2', name: '2조', members: ALL.slice(5, 10) },
+    { id: 'g3', name: '3조', members: ALL.slice(10, 14) },
+    { id: 'g4', name: '4조', members: ALL.slice(14, 18) },
+    { id: 'g5', name: '5조', members: ALL.slice(18, 22) },
+  ];
+  const S = {
+    rules: [{ from: '2026-09-28', order: [...WD], starts: { g1: 3, g2: 4, g3: 0, g4: 1, g5: 2 } }],
+    draft: null,
+    confirm: false,
+    groups: defaultGroups(),
+    skip: { '2026-10-05': true, '2026-11-23': true },
+    month: '2026-10',
+    selected: null,
+    panel: null,
+    backup: null,
+    overrides: { '임ㅇㅇ|2026-10-28': 'unk', '김ㅇㅇ2|2026-10-28': 'work', '오ㅇㅇ|2026-10-27': 'unk' },
+    extras: { '양ㅇㅇ|2026-10-30': true },
+    off: {},
+    records: {
+      '이ㅇㅇ|2026-10-27': { c: 'leave', t: '휴가' },
+      '박ㅇㅇ|2026-10-22': { c: 'trip', t: '출장' },
+      '곽ㅇㅇ|2026-10-21': { c: 'training', t: '교육' },
+      '심ㅇㅇ|2026-10-14': { c: 'half', t: '반차', p: '오전' },
+      '장ㅇㅇ|2026-10-28': { c: 'checkup', t: '건강검진' },
+      '류ㅇㅇ|2026-10-29': { c: 'leave', t: '휴가' },
+    },
+  };
+  const lastRule = () => S.rules[S.rules.length - 1];
+  const initDraft = () => { const r = lastRule(); S.draft = { from: r.from, order: [...r.order], starts: { ...r.starts } }; S.confirm = false; };
+  initDraft();
+  const dirty = () => JSON.stringify(S.draft) !== JSON.stringify(lastRule());
+  let PREVIEW = false;
+  const activeRules = () => (PREVIEW && dirty()) ? [...S.rules.filter(r => r.from < S.draft.from), { ...S.draft }] : S.rules;
+  const ruleFor = wk => { const rs = activeRules(); let r = rs[0]; rs.forEach(x => { if (x.from <= wk) r = x; }); return r; };
+  const groupOf = name => S.groups.find(g => g.members.includes(name));
+  const unassigned = () => ALL.filter(n => !groupOf(n));
+  const blocks = () => {
+    const out = [], un = unassigned();
+    if (un.length) out.push({ g: null, m: un });
+    S.groups.forEach(g => g.members.length && out.push({ g, m: g.members }));
+    return out;
+  };
+  const filledGroups = () => S.groups.filter(g => g.members.length).length;
+
+  function remoteOf(g, wk) {
+    if (S.skip[wk]) return { skip: true };
+    const rule = ruleFor(wk), bi = WEEKS.indexOf(rule.from), i = WEEKS.indexOf(wk);
+    let n = 0;
+    if (i > bi) { for (let k = bi + 1; k <= i; k++) if (!S.skip[WEEKS[k]]) n++; }
+    else if (i < bi) { for (let k = i; k < bi; k++) if (!S.skip[WEEKS[k]]) n--; }
+    const L = rule.order.length;
+    if (!L) return { day: -1, label: REST };
+    const label = rule.order[mod((rule.starts[g.id] ?? 0) + n, L)];
+    return { day: WD.indexOf(label), label };
+  }
+  const isHoliday = d => CAL[d]?.kind === 'holiday';
+  const planned = (name, date) => {
+    if (isHoliday(date)) return false;
+    const key = `${name}|${date}`;
+    if (S.off[key]) return false;
+    if (S.extras[key]) return true;
+    const g = groupOf(name);
+    return !!g && remoteOf(g, mondayOf(date)).day === wdIndex(date);
+  };
+
+  /* ───────── shared grid (strip + name + day columns) ───────── */
+  function monthDays(ym) {
+    const days = [];
+    for (let d = parse(ym + '-01'); iso(d).slice(0, 7) === ym; d.setDate(d.getDate() + 1)) {
+      const w = d.getDay(); if (w >= 1 && w <= 5) days.push(iso(d));
+    }
+    return days;
+  }
+  const startsWeek = (d, i) => i > 0 && wdIndex(d) === 0;
+  function weekSegs(days) {
+    const segs = [];
+    days.forEach(d => { const wk = mondayOf(d), l = segs[segs.length - 1]; if (l && l.wk === wk) l.n++; else segs.push({ wk, n: 1 }); });
+    return segs;
+  }
+  function buildGrid({ days, dayW, cell, skipRow, sm }) {
+    const head = days.map((d, i) => {
+      const c = CAL[d], hol = c?.kind === 'holiday';
+      return `<th class="${startsWeek(d, i) ? 'wk ' : ''}${d === TODAY ? 'today' : ''}" ${d === TODAY ? 'aria-current="date"' : ''}>
+        <div class="dn" style="${hol ? 'color:var(--destructive)' : ''}">${+d.slice(8)}</div>
+        <div class="wd" style="${hol ? 'color:var(--destructive)' : ''}">${WD[wdIndex(d)]}</div>
+        ${hol ? `<div class="hn" title="${c.name}">${c.name}</div>` : ''}
+        ${c?.kind === 'event' ? `<div class="ev" title="${c.name}">${c.name}</div>` : ''}</th>`;
+    }).join('');
+    let after = '';
+    if (skipRow) {
+      after = `<tr class="skiprow"><th class="nm" colspan="2" style="font-weight:500">리모트 없음</th>${weekSegs(days).map((s, i) =>
+        `<th colspan="${s.n}" class="${i > 0 ? 'wk' : ''}" style="padding:.25rem 0"><label style="display:inline-flex;gap:.3rem;align-items:center;font-size:.75rem;font-weight:400"><input type="checkbox" data-act="skip" data-wk="${s.wk}" ${S.skip[s.wk] ? 'checked' : ''} aria-label="${md(s.wk)} 주 리모트 없음">${s.n > 1 ? md(s.wk) + ' 주' : ''}</label></th>`).join('')}</tr>`;
+    }
+    const rows = [];
+    blocks().forEach(({ g, m }) => {
+      m.forEach((name, idx) => {
+        rows.push(`<tr class="${idx === 0 ? 'gs' : ''}">${idx === 0 ? `<th class="strip ${g ? '' : 'un'}" rowspan="${m.length}" scope="rowgroup">${g ? g.name : ''}</th>` : ''}<th scope="row">${name}</th>${days.map((d, i) =>
+          `<td class="${startsWeek(d, i) ? 'wk ' : ''}${d === TODAY ? 'today' : ''}">${cell(name, d)}</td>`).join('')}</tr>`);
+      });
+    });
+    return `<div class="tbl-wrap"><table class="att ${sm ? 'sm' : ''}" style="width:${8 + days.length * dayW}rem">
+      <colgroup><col style="width:2rem"><col style="width:6rem">${days.map(() => `<col style="width:${dayW}rem">`).join('')}</colgroup>
+      <thead><tr><th class="nm" colspan="2">이름</th>${head}</tr>${after}</thead><tbody>${rows.join('')}</tbody></table></div>`;
+  }
+  function swap(hostEl, html) {
+    const old = hostEl.querySelector('.tbl-wrap'), keep = old ? old.scrollLeft : null;
+    hostEl.innerHTML = html;
+    if (keep != null) hostEl.querySelector('.tbl-wrap').scrollLeft = keep;
+  }
+  function renderMonthSwitch() {
+    document.querySelectorAll('.month-switch').forEach(el => el.innerHTML = ['2026-10', '2026-11'].map(m =>
+      `<button class="btn ${m === S.month ? 'on' : ''}" data-act="month" data-m="${m}">${+m.slice(5)}월</button>`).join(''));
+  }
+
+  /* ───────── 1. status table ───────── */
+  const host = document.getElementById('tbl-host');
+  const admHost = document.getElementById('adm-host');
+  function nextState(key, date) {
+    const [name] = key.split('|');
+    const ov = S.overrides[key];
+    return planned(name, date) ? (ov || 'remote') : (ov === 'unk' ? 'unk' : 'work');
+  }
+  const LETTER = { leave: "휴", half: "반", trip: "출", training: "교", checkup: "건" };
+  function cellHtml(name, date) {
+    const key = `${name}|${date}`, lab = `${name} ${md(date)}`;
+    if (isHoliday(date)) return `<div class="sq holi" role="img" aria-label="${lab} 휴일"></div>`;
+    const rec = S.records[key];
+    if (rec) return `<div class="sq t-${rec.c}" title="${rec.t}${rec.p ? " " + rec.p : ""}" aria-label="${lab} ${rec.t}">${LETTER[rec.c]}</div>`;
+    const st = nextState(key, date), isP = planned(name, date);
+    const look = st === "remote" ? `t-remote">리${S.extras[key] ? '<i class="plus">+</i>' : ""}` : st === "work" ? "t-work\">" : "unk\">?";
+    const tip = st === "remote" ? "누르면 출근으로" : st === "work" ? "누르면 미확인(?)으로" : (isP ? "누르면 리모트로" : "누르면 출근으로");
+    const label = st === "remote" ? "리모트" : st === "work" ? "출근" : "미확인";
+    if (date <= TODAY) return `<button type="button" data-act="tog" data-key="${key}" data-date="${date}" data-tip="${tip}" aria-label="${lab} ${label}, ${tip}" class="sq tog ${look}</button>`;
+    return `<div role="img" aria-label="${lab} ${label}" title="${label}" class="sq ${look}</div>`;
+  }
+  function renderTable() {
+    swap(host, buildGrid({ days: monthDays(S.month), dayW: 2.5, cell: cellHtml, sm: true }));
+    renderMonthSwitch();
+  }
+  function scrollToToday(h) {
+    const w = h.querySelector('.tbl-wrap'), t = w && w.querySelector('th.today');
+    if (w && t && w.clientWidth) { w.scrollLeft = Math.max(0, t.offsetLeft - w.clientWidth + 260); return true; }
+    return !t && !!(w && w.clientWidth);
+  }
+  const seen = new Set();
+  [host, admHost].forEach(h => new IntersectionObserver(es => { if (es[0].isIntersecting && !seen.has(h)) { if (scrollToToday(h)) seen.add(h); } }).observe(h));
+
+  /* ───────── 2. remote admin ───────── */
+  function renderGroups() {
+    const sel = S.selected;
+    const moveBtn = gid => sel ? `<button class="btn sm" data-act="drop" data-gid="${gid}">${sel}을(를) 여기로 옮기기</button>` : '';
+    const chips = members => members.map(n => `<button class="m ${n === sel ? 'sel' : ''}" data-act="pick" data-name="${n}">${n}</button>`).join('');
+    const un = unassigned();
+    const unCard = `<div class="gcard un"><div class="hd"><b>미배정</b><span class="muted small">${un.length}명</span></div>
+      <div class="members">${un.length ? chips(un) : '<span class="muted small">모든 팀원이 배정되었습니다</span>'}</div>${moveBtn('')}</div>`;
+    const cards = S.groups.map(g => `<div class="gcard"><div class="hd">
+        <input class="fld" data-act="rename" data-gid="${g.id}" value="${g.name}" aria-label="조 이름">
+        <span class="row"><span class="muted small">${g.members.length}명</span><button class="btn sm" data-act="delgroup" data-gid="${g.id}" title="조 삭제 (팀원은 미배정으로)">삭제</button></span></div>
+      <div class="members">${g.members.length ? chips(g.members) : '<span class="muted small">비어 있음</span>'}</div>${moveBtn(g.id)}</div>`).join('');
+    document.getElementById('grp-host').innerHTML = `<div class="cols">${unCard}${cards}</div><div style="margin-top:.75rem"><button class="btn" data-act="addgroup">+ 조 추가</button></div>`;
+  }
+  function renderRule() {
+    const d = S.draft, L = d.order.length, isDirty = dirty();
+    const blocked = L === 0 || filledGroups() > L;
+    const steps = d.order.map((l, i) => `${i ? '<span class="arrow">→</span>' : ''}<span class="step ${l === REST ? 'rest' : ''}"><span class="no">${i + 1}</span>${l}
+      <button class="btn sm" data-act="ostep" data-i="${i}" data-d="-1" ${i === 0 ? 'disabled' : ''} aria-label="앞으로">◀</button><button class="btn sm" data-act="ostep" data-i="${i}" data-d="1" ${i === L - 1 ? 'disabled' : ''} aria-label="뒤로">▶</button><button class="btn sm" data-act="orm" data-i="${i}" aria-label="삭제">×</button></span>`).join('');
+    const free = [...WD, REST].filter(x => !d.order.includes(x));
+    const starts = S.groups.filter(g => g.members.length).map(g => `<label class="row small" style="gap:.35rem"><b>${g.name}</b><select class="fld" data-act="start" data-gid="${g.id}">${d.order.map((l, i) => `<option value="${i}" ${i === mod(d.starts[g.id] ?? 0, L || 1) ? 'selected' : ''}>${l === REST ? '쉼' : l}</option>`).join('')}</select></label>`).join('');
+    const err = blocked ? `<p class="warn">${L === 0 ? '요일 단계가 없어 저장할 수 없습니다.' : `조가 ${filledGroups()}개인데 요일 단계는 ${L}개라 저장할 수 없습니다. 단계를 늘리거나 조를 줄이세요.`}</p>` : '';
+    const note = isDirty ? `<div class="callout" style="margin-top:.75rem"><b>변경을 미리 보는 중입니다.</b> 아래 리모트 표에 반영해 보여 주며, 아직 적용되지 않았습니다.
+        <div class="row" style="margin-top:.5rem"><button class="btn on" data-act="apply" ${blocked ? 'disabled' : ''}>적용…</button><button class="btn" data-act="revert">되돌리기</button></div></div>` : '';
+    const warn = S.confirm && isDirty && !blocked ? `<div class="callout" style="margin-top:.5rem;border-color:var(--destructive)"><b style="color:var(--destructive)">주의</b> · ${md(d.from)} 주부터의 패턴만 바뀌고, 그 이전 주는 현재 패턴을 유지합니다(이전 패턴이 없으면 이전 주도 새 패턴으로 계산됩니다). 직접 고친 칸과 근태 기록은 그대로 남습니다.
+        <div class="row" style="margin-top:.5rem"><button class="btn on" data-act="confirmapply">확인하고 적용</button><button class="btn" data-act="cancelconfirm">취소</button></div></div>` : '';
+    document.getElementById('rule-host').innerHTML = `
+      <div class="small muted" style="margin-bottom:.35rem">요일 순서 · 모든 조가 같은 순서를 돌고, “리모트 없음” 단계를 넣으면 그 주는 쉽니다</div>
+      <div class="steps">${steps || '<span class="muted small">단계가 없습니다</span>'}</div>
+      <div class="row" style="margin-top:.6rem"><span class="muted small">단계 추가</span>${free.map(x => `<button class="btn sm" data-act="oadd" data-l="${x}">+ ${x}</button>`).join('') || '<span class="muted small">모두 추가됨</span>'}
+        <span class="muted small" style="margin-left:.5rem">프리셋</span><button class="btn sm" data-act="opreset" data-v="월,화,수,목,금">월 화 수 목 금</button><button class="btn sm" data-act="opreset" data-v="화,목,수,금">화 목 수 금 (과거 규칙)</button><button class="btn sm" data-act="opreset" data-v="월,화,수,목,금,${REST}">월~금 + 쉼</button></div>
+      <div class="row" style="margin:1rem 0 .35rem"><label class="row">기준 주 <input class="fld" type="date" data-act="base" min="2026-09-28" max="2026-12-31" value="${d.from}" style="width:9.5rem"></label>
+        <span class="small muted">고른 날이 속한 주(${md(d.from)} 주)가 기준 주입니다. 요일은 상관없습니다.</span></div>
+      <div class="small muted" style="margin:.75rem 0 .35rem">기준 주의 조별 리모트 요일</div>
+      <div class="row" style="gap:.5rem 1.25rem">${starts || '<span class="muted small">편성된 조가 없습니다</span>'}</div>
+      ${err}${note}${warn}`;
+  }
+  function admCell(name, date) {
+    const key = `${name}|${date}`, wk = mondayOf(date);
+    if (isHoliday(date)) return '<div class="sq holi" role="img" aria-label="휴일"></div>';
+    const rec = S.records[key];
+    if (rec) return `<div class="sq t-${rec.c}" title="${rec.t} 기록이 우선합니다">${LETTER[rec.c]}</div>`;
+    if (S.skip[wk]) return '<div class="sq holi" title="리모트 없는 주"></div>';
+    const on = planned(name, date), ed = S.extras[key] || S.off[key];
+    return `<button type="button" class="sq tog ${on ? 'on' : ''} ${ed ? 'ed' : ''}" data-act="adm" data-key="${key}" data-tip="${on ? '누르면 리모트 해제' : '누르면 리모트 지정'}" aria-pressed="${on}" aria-label="${name} ${md(date)} ${on ? '리모트' : '리모트 아님'}"></button>`;
+  }
+  function renderAdm() {
+    PREVIEW = true;
+    swap(admHost, buildGrid({ days: monthDays(S.month), dayW: 2.5, cell: admCell, skipRow: true, sm: true }));
+    PREVIEW = false;
+    renderMonthSwitch();
+  }
+  function syncPreset() {
+    if (prototypeShell.getScreen() !== 'remote-admin') return;
+    prototypeShell.setState(S.groups.every(g => !g.members.length) ? '처음 편성' : 'Default');
+  }
+  function renderAdmin() { renderGroups(); renderRule(); renderAdm(); }
+
+  function renderAll() { renderTable(); renderAdmin(); }
+
+  /* ───────── events ───────── */
+  document.addEventListener('click', e => {
+    const t = e.target.closest('[data-act]'); if (!t) return;
+    const a = t.dataset.act, d = S.draft;
+    if (a === 'tog') {
+      const key = t.dataset.key, [name] = key.split('|');
+      const st = nextState(key, t.dataset.date), isP = planned(name, t.dataset.date);
+      if (isP) { if (st === 'remote') S.overrides[key] = 'work'; else if (st === 'work') S.overrides[key] = 'unk'; else delete S.overrides[key]; }
+      else { if (st === 'work') S.overrides[key] = 'unk'; else delete S.overrides[key]; }
+      renderTable(); return;
+    }
+    if (a === 'adm') {
+      const k = t.dataset.key, [name, date] = k.split('|');
+      if (planned(name, date)) { if (S.extras[k]) delete S.extras[k]; else S.off[k] = true; }
+      else { if (S.off[k]) delete S.off[k]; else S.extras[k] = true; }
+      renderTable(); renderAdm(); return;
+    }
+    if (a === 'month') { S.month = t.dataset.m; seen.clear(); renderTable(); renderAdm(); [host, admHost].forEach(h => { h.querySelector('.tbl-wrap').scrollLeft = 0; if (scrollToToday(h)) seen.add(h); }); return; }
+    if (a === 'pick') { S.selected = S.selected === t.dataset.name ? null : t.dataset.name; renderGroups(); return; }
+    if (a === 'drop') {
+      const n = S.selected; if (!n) return;
+      S.groups.forEach(g => g.members = g.members.filter(x => x !== n));
+      const g = S.groups.find(x => x.id === t.dataset.gid);
+      if (g) g.members = ALL.filter(x => g.members.includes(x) || x === n);
+      S.selected = null; renderAll(); syncPreset(); return;
+    }
+    if (a === 'addgroup') { S.groups.push({ id: 'g' + Date.now(), name: (S.groups.length + 1) + '조', members: [] }); renderAll(); syncPreset(); return; }
+    if (a === 'delgroup') { S.groups = S.groups.filter(g => g.id !== t.dataset.gid); renderAll(); syncPreset(); return; }
+    if (a === 'ostep') { const i = +t.dataset.i, dd = +t.dataset.d, o = d.order; [o[i], o[i + dd]] = [o[i + dd], o[i]]; S.confirm = false; renderRule(); renderAdm(); return; }
+    if (a === 'orm') { d.order.splice(+t.dataset.i, 1); S.confirm = false; renderRule(); renderAdm(); return; }
+    if (a === 'oadd') { d.order.push(t.dataset.l); S.confirm = false; renderRule(); renderAdm(); return; }
+    if (a === 'opreset') { d.order = t.dataset.v.split(','); S.confirm = false; renderRule(); renderAdm(); return; }
+    if (a === 'apply') { S.confirm = true; renderRule(); return; }
+    if (a === 'cancelconfirm') { S.confirm = false; renderRule(); return; }
+    if (a === 'revert') { initDraft(); renderRule(); renderAdm(); return; }
+    if (a === 'confirmapply') {
+      S.rules = [...S.rules.filter(r => r.from < d.from), { from: d.from, order: [...d.order], starts: { ...d.starts } }];
+      initDraft(); renderAll(); return;
+    }
+  });
+  document.addEventListener('change', e => {
+    const t = e.target.closest('[data-act]'); if (!t) return;
+    const a = t.dataset.act;
+    if (a === 'rename') { const g = S.groups.find(x => x.id === t.dataset.gid); g.name = t.value.trim() || g.name; renderAll(); }
+    if (a === 'start') { S.draft.starts[t.dataset.gid] = +t.value; S.confirm = false; renderRule(); renderAdm(); }
+    if (a === 'base') {
+      if (!t.value) return;
+      const wk = mondayOf(t.value);
+      if (WEEKS.includes(wk)) { S.draft.from = wk; S.confirm = false; }
+      renderRule(); renderAdm();
+    }
+    if (a === 'skip') { if (t.checked) S.skip[t.dataset.wk] = true; else delete S.skip[t.dataset.wk]; renderAll(); }
+  });
+  stateSelect.addEventListener('change', () => {
+    if (prototypeShell.getScreen() !== 'remote-admin') return;
+    if (stateSelect.value === '처음 편성') {
+      S.backup = S.groups.map(g => [...g.members]);
+      S.groups.forEach(g => g.members = []);
+    } else if (S.backup) {
+      S.groups.forEach((g, i) => { g.members = S.backup[i] || []; });
+      S.backup = null;
+    } else if (S.groups.every(g => !g.members.length)) {
+      S.groups = defaultGroups();
+    }
+    S.selected = null; renderAll();
+  });
+  renderAll();
+</script>
