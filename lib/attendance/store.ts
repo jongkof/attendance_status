@@ -1,6 +1,7 @@
 import "server-only";
 
 import { supabaseAdmin as supabase } from "@/lib/supabase/server";
+import type { RemoteConfirmation } from "./morning-confirmation";
 import { checkCanMarkUnconfirmed } from "./unconfirmed";
 import type { AttendanceChange, AttendanceRecord, UnconfirmedMark } from "./types";
 
@@ -102,10 +103,46 @@ export async function getUnconfirmed(range?: { from: string; to: string }): Prom
   return data.map((row) => ({ name: row.members?.name ?? "", date: row.work_date }));
 }
 
-/** 현황표 한 장(명단, 근태 기록, 미확인 표시)을 그리는 데 필요한 값. */
+type ConfirmationRow = { work_date: string; result: RemoteConfirmation["result"]; members: { name: string } | null };
+
+/** 리모트 칸의 아침 확인 결과(출근, 미확인). 기간을 주면 그 사이(양 끝 포함)만 읽는다. */
+export async function getConfirmations(range?: { from: string; to: string }): Promise<RemoteConfirmation[]> {
+  let query = supabase().from("morning_confirmations").select("work_date, result, members(name)").order("work_date");
+  if (range) query = query.gte("work_date", range.from).lte("work_date", range.to);
+  const { data, error } = await query.overrideTypes<ConfirmationRow[]>();
+  if (error) throw new Error(`아침 확인 결과를 읽지 못했습니다: ${error.message}`);
+  return data.map((row) => ({ name: row.members?.name ?? "", date: row.work_date, result: row.result }));
+}
+
+/** 현황표 한 장(명단, 근태 기록, 미확인 표시, 아침 확인 결과)을 그리는 데 필요한 값. */
 export async function getMonthView(range: { from: string; to: string }) {
-  const [roster, records, unconfirmed] = await Promise.all([getRoster(), getRecords(range), getUnconfirmed(range)]);
-  return { roster, records, unconfirmed };
+  const [roster, records, unconfirmed, confirmations] = await Promise.all([
+    getRoster(),
+    getRecords(range),
+    getUnconfirmed(range),
+    getConfirmations(range),
+  ]);
+  return { roster, records, unconfirmed, confirmations };
+}
+
+/** 한 칸의 아침 확인 결과를 저장한다. result가 null이면 확인 결과를 지워 리모트로 되돌린다. 근태 기록은 건드리지 않는다. */
+export async function setConfirmation(
+  name: string,
+  date: string,
+  result: RemoteConfirmation["result"] | null,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const client = supabase();
+  const member = await client.from("members").select("id").eq("name", name).maybeSingle<{ id: number }>();
+  if (member.error) return { ok: false, error: `명단을 읽지 못했습니다: ${member.error.message}` };
+  if (!member.data) return { ok: false, error: "팀원 명단에 없는 이름입니다." };
+  const { error } =
+    result === null
+      ? await client.from("morning_confirmations").delete().eq("member_id", member.data.id).eq("work_date", date)
+      : await client
+          .from("morning_confirmations")
+          .upsert({ member_id: member.data.id, work_date: date, result, confirmed_at: new Date().toISOString() });
+  if (error) return { ok: false, error: `아침 확인 결과를 저장하지 못했습니다: ${error.message}` };
+  return { ok: true };
 }
 
 export type ToggleResult = { ok: true; marked: boolean } | { ok: false; error: string };

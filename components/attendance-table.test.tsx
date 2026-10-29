@@ -281,3 +281,99 @@ describe("조 편성과 계획된 리모트", () => {
     expect(counts).toEqual({ 리모트: 1, 출근: 1, 부재: 0, "오전 반차": 0, 미확인: 0 });
   });
 });
+
+describe("관리자 표의 아침 확인 3단계 토글", () => {
+  const toggleMorning = vi.fn(async () => ({ ok: true as const, state: "present" as const }));
+  const remoteRecord = (name: string, date: string) => ({
+    name,
+    date,
+    type: "리모트" as const,
+    period: null,
+    time: null,
+    note: null,
+    receivedAt: "2026-10-28T00:00:00Z",
+  });
+
+  function renderMorning(extra: Partial<React.ComponentProps<typeof AttendanceTable>> = {}) {
+    toggleMorning.mockClear();
+    return render(
+      <AttendanceTable
+        roster={["양ㅇㅇ", "홍ㅇㅇ"]}
+        days={["2026-10-09", "2026-10-28", "2026-10-29", "2026-10-30"]}
+        records={[remoteRecord("양ㅇㅇ", "2026-10-29"), remoteRecord("양ㅇㅇ", "2026-10-30")]}
+        planned={["홍ㅇㅇ|2026-10-28", "홍ㅇㅇ|2026-10-30", "홍ㅇㅇ|2026-10-09"]}
+        dayMarks={{ "2026-10-09": { holiday: "한글날", events: [] } }}
+        today="2026-10-29"
+        toggle={async () => ({ ok: true as const, marked: true })}
+        toggleMorning={toggleMorning}
+        {...extra}
+      />,
+    );
+  }
+
+  test("계획된 리모트와 기록 리모트 칸 모두 단서(포인터, 호버 테두리, 다음 상태 툴팁)를 보이고 눌린다", async () => {
+    renderMorning();
+    const planned = screen.getByRole("button", { name: /홍ㅇㅇ 2026-10-28 리모트/ });
+    const recorded = screen.getByRole("button", { name: /양ㅇㅇ 2026-10-29 리모트/ });
+    for (const cell of [planned, recorded]) {
+      expect(cell.className).toContain("cursor-pointer");
+      expect(cell.className).toContain("hover:ring-2");
+      expect(cell).toHaveAttribute("title", "누르면 출근으로");
+    }
+    fireEvent.click(recorded);
+    await waitFor(() => expect(toggleMorning).toHaveBeenCalledWith("양ㅇㅇ", "2026-10-29"));
+  });
+
+  test("미래 칸과 휴일 칸은 눌리지 않는다", () => {
+    renderMorning();
+    expect(screen.queryByRole("button", { name: /2026-10-30/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /2026-10-09/ })).toBeNull();
+  });
+
+  test("리모트가 아닌 근태 기록 칸은 눌리지 않고, 일정 없는 칸은 기존 출근↔미확인 토글을 쓴다", () => {
+    renderMorning({
+      records: [{ ...remoteRecord("양ㅇㅇ", "2026-10-29"), type: "휴가" }],
+    });
+    expect(screen.queryByRole("button", { name: /양ㅇㅇ 2026-10-29 (리모트|출근|미확인)/ })).toBeNull();
+    expect(screen.getByRole("button", { name: "홍ㅇㅇ 2026-10-29 출근, 눌러서 미확인으로 표시" })).toBeEnabled();
+  });
+
+  test("확인 결과대로 칸이 출근(녹색)과 미확인(?)으로 보이고 단서가 다음 상태를 알린다", () => {
+    renderMorning({
+      confirmations: [
+        { name: "양ㅇㅇ", date: "2026-10-29", result: "present" },
+        { name: "홍ㅇㅇ", date: "2026-10-28", result: "unconfirmed" },
+      ],
+    });
+    const present = screen.getByRole("button", { name: /양ㅇㅇ 2026-10-29 출근/ });
+    expect(present.className).toContain("bg-att-work");
+    expect(present).toHaveAttribute("title", "누르면 미확인(?)으로");
+    const unconfirmed = screen.getByRole("button", { name: /홍ㅇㅇ 2026-10-28 미확인/ });
+    expect(unconfirmed).toHaveTextContent("?");
+    expect(unconfirmed).toHaveAttribute("title", "누르면 리모트로");
+  });
+
+  test("공개 표는 확인 결과를 보여 주되 눌리지 않고, 집계는 출근·미확인으로 세며 합이 명단 인원수와 같다", () => {
+    const { container } = render(
+      <AttendanceTable
+        roster={["양ㅇㅇ", "홍ㅇㅇ", "김ㅇㅇ"]}
+        days={["2026-10-28"]}
+        records={[remoteRecord("양ㅇㅇ", "2026-10-28")]}
+        planned={["홍ㅇㅇ|2026-10-28", "김ㅇㅇ|2026-10-28"]}
+        confirmations={[
+          { name: "양ㅇㅇ", date: "2026-10-28", result: "present" },
+          { name: "홍ㅇㅇ", date: "2026-10-28", result: "unconfirmed" },
+        ]}
+        showSummary
+        today="2026-10-29"
+      />,
+    );
+    expect(screen.queryAllByRole("button")).toHaveLength(0);
+    expect(screen.getByRole("img", { name: "양ㅇㅇ 2026-10-28 출근" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "홍ㅇㅇ 2026-10-28 미확인" })).toBeInTheDocument();
+    const counts = Object.fromEntries(
+      [...container.querySelectorAll("tfoot tr")].map((row) => [row.querySelector("th")?.textContent, Number(row.querySelector("td")?.textContent)]),
+    );
+    expect(counts).toEqual({ 리모트: 1, 출근: 1, 부재: 0, "오전 반차": 0, 미확인: 1 });
+  });
+});

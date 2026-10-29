@@ -2,7 +2,8 @@ import "server-only";
 
 import { loadPlan } from "@/app/load-plan";
 
-import { getRecords, getRoster, getUnconfirmed } from "@/lib/attendance/store";
+import { applyMorningConfirmations } from "@/lib/attendance";
+import { getConfirmations, getRecords, getRoster, getUnconfirmed } from "@/lib/attendance/store";
 import { dayMarksFor } from "@/lib/calendar";
 import type { MailInput } from "@/lib/mail";
 
@@ -19,12 +20,20 @@ function addDays(date: string, days: number): string {
  */
 export async function loadMailInput(date: string, origin: string): Promise<MailInput> {
   const to = addDays(date, LOOKAHEAD_DAYS);
-  const [roster, records, unconfirmed, plan] = await Promise.all([
+  const [roster, rawRecords, rawUnconfirmed, confirmations, plan] = await Promise.all([
     getRoster(),
     getRecords({ from: date, to }),
     getUnconfirmed({ from: date, to: date }),
+    getConfirmations({ from: date, to: date }),
     loadPlan([date]),
   ]);
+  // 아침 확인 결과(출근, 미확인)를 반영한다. 근태 기록 자체는 바뀌지 않고 이 계산용 사본만 바뀐다.
+  const { records, unconfirmed, planned } = applyMorningConfirmations({
+    records: rawRecords,
+    unconfirmed: rawUnconfirmed,
+    planned: plan.planned,
+    confirmations,
+  });
 
   const days = Array.from({ length: LOOKAHEAD_DAYS + 1 }, (_, index) => addDays(date, index));
   const marks = dayMarksFor(days, plan.entries);
@@ -34,7 +43,7 @@ export async function loadMailInput(date: string, origin: string): Promise<MailI
     roster,
     records: records.map(({ name, date: recordDate, type, period, time }) => ({ name, date: recordDate, type, period, time })),
     unconfirmedNames: unconfirmed.map((mark) => mark.name),
-    plannedNames: plan.planned.filter((cell) => cell.endsWith(`|${date}`)).map((cell) => cell.slice(0, -date.length - 1)),
+    plannedNames: planned.filter((cell) => cell.endsWith(`|${date}`)).map((cell) => cell.slice(0, -date.length - 1)),
     holiday: marks[date].holiday,
     events: marks[date].events,
     holidayDates: new Set(days.filter((day) => marks[day].holiday)),

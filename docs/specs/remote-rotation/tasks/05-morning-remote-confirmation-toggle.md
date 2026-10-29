@@ -10,13 +10,13 @@
 
 ## Acceptance criteria
 
-- [ ] 관리자 현황표에서 오늘과 지난 날짜의 리모트 칸(계획된 리모트와 공지 기록 리모트 모두)을 누를 때마다 리모트 → 출근 → 미확인(?) → 리모트 순서로 바뀐다.
-- [ ] 휴일 칸, 미래 칸, 리모트가 아닌 다른 근태 기록 칸은 이 토글로 바뀌지 않는다. 기존의 일정 없는 칸 출근 ↔ 미확인 토글은 그대로 동작한다.
-- [ ] 눌러서 바꿀 수 있는 리모트 칸은 포인터, 호버 테두리, 다음 상태 툴팁을 보인다.
-- [ ] 확인 결과는 근태 기록과 이력을 바꾸지 않는다. 같은 날짜의 근태 JSON을 다시 반영해도 확인 결과는 유지된다.
-- [ ] “출근”으로 확인된 칸은 공개 현황표에 출근으로, “미확인”으로 확인된 칸은 미확인(?)으로 보이고, 현황 메일과 집계에서 리모트가 아니라 각각 출근과 미확인으로 센다. 집계의 합은 명단 인원수와 같다.
-- [ ] 다시 “리모트”로 돌리면 원래 리모트(계획 또는 기록)로 돌아간다.
-- [ ] 로그인하지 않은 상태에서 이 토글 요청을 서버에 직접 보내도 거절되어 아무것도 바뀌지 않는다.
+- [x] 관리자 현황표에서 오늘과 지난 날짜의 리모트 칸(계획된 리모트와 공지 기록 리모트 모두)을 누를 때마다 리모트 → 출근 → 미확인(?) → 리모트 순서로 바뀐다.
+- [x] 휴일 칸, 미래 칸, 리모트가 아닌 다른 근태 기록 칸은 이 토글로 바뀌지 않는다. 기존의 일정 없는 칸 출근 ↔ 미확인 토글은 그대로 동작한다.
+- [x] 눌러서 바꿀 수 있는 리모트 칸은 포인터, 호버 테두리, 다음 상태 툴팁을 보인다.
+- [x] 확인 결과는 근태 기록과 이력을 바꾸지 않는다. 같은 날짜의 근태 JSON을 다시 반영해도 확인 결과는 유지된다.
+- [x] “출근”으로 확인된 칸은 공개 현황표에 출근으로, “미확인”으로 확인된 칸은 미확인(?)으로 보이고, 현황 메일과 집계에서 리모트가 아니라 각각 출근과 미확인으로 센다. 집계의 합은 명단 인원수와 같다.
+- [x] 다시 “리모트”로 돌리면 원래 리모트(계획 또는 기록)로 돌아간다.
+- [x] 로그인하지 않은 상태에서 이 토글 요청을 서버에 직접 보내도 거절되어 아무것도 바뀌지 않는다.
 
 ## Constraints
 
@@ -46,13 +46,13 @@ verification pass. Use `superseded` only after an approved replacement of a
 task with recorded completion history. Preserve its Execution evidence and name
 the replacement and reason under Revision; it is then terminal for that approved
 breakdown and outside the current delivery map. -->
-pending
+completed
 
 ## Execution
 
 <!-- Append concise evidence and preserve earlier entries when status changes.
 Execution Blocker is the current impediment for an active task, not a declared
 task dependency. In a superseded task, preserved entries are historical. -->
-- Verification: —
+- Verification: 단위·컴포넌트·요청 거절 테스트 통과(bun run test 172개, lint 통과). 실제 화면 확인은 worktree에 .env.local이 없어 못 했고 사용자 확인이 필요하다. 새 SQL: supabase/migrations/20261030200000_morning_confirmations.sql(SQL Editor에서 실행).
 - Blocker: —
 - Revision: —
