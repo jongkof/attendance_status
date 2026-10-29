@@ -13,6 +13,9 @@ export function AdminNav() {
       <Link href="/admin/import" className={buttonVariants({ variant: "ghost", size: "sm" })}>
         근태 JSON 반영
       </Link>
+      <Link href="/admin/mail" className={buttonVariants({ variant: "ghost", size: "sm" })}>
+        현황 메일
+      </Link>
       <Link href="/admin/calendar" className={buttonVariants({ variant: "ghost", size: "sm" })}>
         휴일·행사
       </Link>
