@@ -19,6 +19,9 @@ export function AdminNav() {
       <Link href="/admin/calendar" className={buttonVariants({ variant: "ghost", size: "sm" })}>
         휴일·행사
       </Link>
+      <Link href="/admin/remote" className={buttonVariants({ variant: "ghost", size: "sm" })}>
+        리모트 관리
+      </Link>
       <Link href="/admin/password" className={buttonVariants({ variant: "ghost", size: "sm" })}>
         비밀번호 변경
       </Link>
