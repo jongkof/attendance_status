@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 type ToggleResult = { ok: true; marked: boolean } | { ok: false; error: string };
 
 const NAME_COLUMN_REM = 6;
-const DAY_COLUMN_REM = 4;
+const DAY_COLUMN_REM = 2.5;
 /** 금요일과 월요일 사이의 주 경계선 */
 const WEEK_BORDER = "border-l-2 border-foreground/25";
 
@@ -124,7 +124,7 @@ export function AttendanceTable({
                     <div
                       role="img"
                       aria-label={`${name} ${day} 미확인`}
-                      title="미확인 (확인 중)"
+                      title="미확인"
                       className={cn(CELL_BOX, UNCONFIRMED_BOX)}
                     >
                       ?

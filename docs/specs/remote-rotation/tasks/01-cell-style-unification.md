@@ -10,12 +10,12 @@ None.
 
 ## Acceptance criteria
 
-- [ ] 출근은 녹색(글자 없음), 리모트 “리”, 휴가 “휴”, 반차·반반차 “반”, 출장 “출”, 교육 “교”, 건강검진 “건”, 미확인은 점선 “?”, 휴일은 회색 칸으로 보인다.
-- [ ] 칸에 마우스를 올리면 한 글자로 줄어든 구분(반차 오전·오후, 반반차 구간, 시간, 비고)이 보인다. 공개 화면에서 칸을 눌러 상세를 보는 기존 동작은 유지된다.
-- [ ] 범례가 같은 한 글자 표기를 쓴다.
-- [ ] 근태 유형별 색, 휴일 음영과 빨간 날짜, 미확인 점선, 주 경계선, 오늘 열 강조는 그대로다.
-- [ ] 관리자 현황표에서 오늘과 지난 날짜의 일정 없는 칸을 눌러 출근 ↔ 미확인(?)을 바꾸고, 눌러서 바꿀 수 있는 칸은 포인터, 호버 테두리, 다음 상태 툴팁을 보인다. 미래 칸과 휴일 칸, 근태 기록이 있는 칸은 눌리지 않는다.
-- [ ] 날짜 열 너비가 이전보다 줄어, 같은 화면에 더 많은 날짜가 들어온다.
+- [x] 출근은 녹색(글자 없음), 리모트 “리”, 휴가 “휴”, 반차·반반차 “반”, 출장 “출”, 교육 “교”, 건강검진 “건”, 미확인은 점선 “?”, 휴일은 회색 칸으로 보인다.
+- [x] 칸에 마우스를 올리면 한 글자로 줄어든 구분(반차 오전·오후, 반반차 구간, 시간, 비고)이 보인다. 공개 화면에서 칸을 눌러 상세를 보는 기존 동작은 유지된다.
+- [x] 범례가 같은 한 글자 표기를 쓴다.
+- [x] 근태 유형별 색, 휴일 음영과 빨간 날짜, 미확인 점선, 주 경계선, 오늘 열 강조는 그대로다.
+- [x] 관리자 현황표에서 오늘과 지난 날짜의 일정 없는 칸을 눌러 출근 ↔ 미확인(?)을 바꾸고, 눌러서 바꿀 수 있는 칸은 포인터, 호버 테두리, 다음 상태 툴팁을 보인다. 미래 칸과 휴일 칸, 근태 기록이 있는 칸은 눌리지 않는다.
+- [x] 날짜 열 너비가 이전보다 줄어, 같은 화면에 더 많은 날짜가 들어온다.
 
 ## Constraints
 
@@ -42,13 +42,13 @@ verification pass. Use `superseded` only after an approved replacement of a
 task with recorded completion history. Preserve its Execution evidence and name
 the replacement and reason under Revision; it is then terminal for that approved
 breakdown and outside the current delivery map. -->
-pending
+completed
 
 ## Execution
 
 <!-- Append concise evidence and preserve earlier entries when status changes.
 Execution Blocker is the current impediment for an active task, not a declared
 task dependency. In a superseded task, preserved entries are historical. -->
-- Verification: —
+- Verification: 컴포넌트 테스트 111개 통과, lint 통과, 개발 서버(포트 3001)에서 유형별 한 글자 칸·범례·열 폭 2.5rem·포인터·툴팁 확인. 공유 DB 환경변수가 없어 임시 더미 페이지로 확인했고 제거함. code-review low 1회, 지적 없음.
 - Blocker: —
 - Revision: —

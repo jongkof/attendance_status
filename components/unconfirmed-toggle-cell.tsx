@@ -2,7 +2,7 @@
 
 import { useOptimistic, useState, useTransition } from "react";
 
-import { CELL_BOX, TYPE_COLOR, UNCONFIRMED_BOX } from "@/components/attendance-style";
+import { CELL_BOX, TOGGLE_HINT, TYPE_COLOR, UNCONFIRMED_BOX } from "@/components/attendance-style";
 import { cn } from "@/lib/utils";
 
 type ToggleResult = { ok: true; marked: boolean } | { ok: false; error: string };
@@ -41,11 +41,12 @@ export function UnconfirmedToggleCell({
       aria-pressed={shown}
       data-invalid={error ? "" : undefined}
       aria-label={`${name} ${date} ${shown ? "미확인, 눌러서 출근으로 되돌리기" : "출근, 눌러서 미확인으로 표시"}`}
-      title={error ?? (shown ? "미확인 (누르면 출근으로 되돌립니다)" : "출근 (누르면 미확인으로 표시합니다)")}
+      title={error ?? (shown ? "누르면 출근으로" : "누르면 미확인으로")}
       className={cn(
         CELL_BOX,
         shown ? UNCONFIRMED_BOX : TYPE_COLOR.출근,
-        "cursor-pointer outline-none focus-visible:ring-3 focus-visible:ring-ring/50 data-invalid:ring-3 data-invalid:ring-destructive/40",
+        TOGGLE_HINT,
+        "outline-none focus-visible:ring-3 focus-visible:ring-ring/50 data-invalid:ring-3 data-invalid:ring-destructive/40",
       )}
     >
       {shown ? "?" : null}
