@@ -1,20 +1,10 @@
 import "server-only";
 
-import { createClient } from "@supabase/supabase-js";
-
+import { supabaseAdmin as supabase } from "@/lib/supabase/server";
 import { checkCanMarkUnconfirmed } from "./unconfirmed";
 import type { AttendanceChange, AttendanceRecord, UnconfirmedMark } from "./types";
 
 const PAGE_SIZE = 1000;
-
-function supabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const secretKey = process.env.SUPABASE_SECRET_KEY;
-  if (!url || !secretKey) {
-    throw new Error("Supabase 환경 변수(NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SECRET_KEY)가 설정되지 않았습니다.");
-  }
-  return createClient(url, secretKey, { auth: { persistSession: false, autoRefreshToken: false } });
-}
 
 type MemberRow = { id: number; name: string };
 

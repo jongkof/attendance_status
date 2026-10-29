@@ -1,12 +1,11 @@
 import { CircleAlertIcon } from "lucide-react";
-import Link from "next/link";
-
+import { AdminNav } from "@/components/admin-nav";
 import { AttendanceLegend } from "@/components/attendance-legend";
 import { AttendanceTable } from "@/components/attendance-table";
 import { MonthNav } from "@/components/month-nav";
 import { PageShell } from "@/components/page-shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { buttonVariants } from "@/components/ui/button";
+import { requireAdmin } from "@/lib/admin/auth";
 import { parseMonth, todayInSeoul, weekdaysOfMonth } from "@/lib/attendance";
 import { getMonthView } from "@/lib/attendance/store";
 
@@ -19,6 +18,7 @@ export default async function AdminPage({
 }: {
   searchParams: Promise<{ month?: string | string[] }>;
 }) {
+  await requireAdmin("/admin");
   const today = todayInSeoul();
   const requested = (await searchParams).month;
   const { year, month } =
@@ -26,10 +26,8 @@ export default async function AdminPage({
   const days = weekdaysOfMonth(year, month);
 
   const actions = (
-    <div className="flex flex-wrap items-center gap-2">
-      <Link href="/admin/import" className={buttonVariants({ size: "sm" })}>
-        근태 JSON 반영
-      </Link>
+    <div className="flex flex-col items-end gap-2">
+      <AdminNav />
       <MonthNav basePath="/admin" year={year} month={month} />
     </div>
   );
