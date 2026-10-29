@@ -53,6 +53,6 @@ completed
 <!-- Append concise evidence and preserve earlier entries when status changes.
 Execution Blocker is the current impediment for an active task, not a declared
 task dependency. In a superseded task, preserved entries are historical. -->
-- Verification: 단위·컴포넌트 테스트(lib/remote/plan.test.ts, lib/attendance/summary.test.ts, lib/mail/build-mail.test.ts, components/attendance-table.test.tsx) 포함 vitest 155개 통과, eslint 통과. 코드 리뷰 low 1회: 지적 없음. 실제 화면(공개·관리자 현황표, /admin/mail 미리보기 대조)은 이 worktree에 .env.local이 없어 하지 못했고 사용자 확인이 필요하다. 새 SQL 없음. 관리자 하단 집계 행은 이 작업에서 새로 만들었다.
+- Verification: 단위·컴포넌트 테스트(lib/remote/plan.test.ts, lib/attendance/summary.test.ts, lib/mail/build-mail.test.ts, components/attendance-table.test.tsx) 포함 vitest 155개 통과, eslint 통과. 코드 리뷰 low 1회: 지적 없음. 실제 화면(공개·관리자 현황표, /admin/mail 미리보기 대조)은 운영 DB에 조 편성과 규칙이 없어 편성 기반 표시를 보지 못했다(편성이 없을 때 이전과 같은 모양인지만 확인). 사용자가 단위·컴포넌트 테스트로 대체하기로 했고, 실제 편성을 쓰기 시작할 때 화면을 확인한다. 새 SQL 없음. 관리자 하단 집계 행은 이 작업에서 새로 만들었다.
 - Blocker: —
 - Revision: —
