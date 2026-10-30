@@ -26,7 +26,11 @@ const LOGIN_REQUIRED = "로그인이 필요합니다. 관리자 로그인 후 �
 async function write(run: () => Promise<WriteResult>): Promise<WriteResult> {
   try {
     const result = await run();
-    if (result.ok) revalidatePath("/admin/remote");
+    if (result.ok) {
+      revalidatePath("/admin/remote");
+      revalidatePath("/");
+      revalidatePath("/admin");
+    }
     return result;
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : "저장하지 못했습니다." };

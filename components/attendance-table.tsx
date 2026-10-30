@@ -1,4 +1,5 @@
 import { AttendanceCell } from "@/components/attendance-cell";
+import { EditTarget, type CellStatus } from "@/components/cell-edit";
 import {
   BODY_CELL,
   BODY_HEAD,
@@ -26,6 +27,7 @@ import { MorningToggleCell, type MorningToggleResult } from "@/components/mornin
 import { UnconfirmedToggleCell } from "@/components/unconfirmed-toggle-cell";
 import {
   applyMorningConfirmations,
+  describeRecord,
   focusDayOf,
   summarizeDay,
   type MorningState,
@@ -75,6 +77,7 @@ export function AttendanceTable({
   tenures = {},
   interviews = [],
   showSummary = false,
+  edit = false,
   today,
   toggle,
   toggleMorning,
@@ -99,6 +102,8 @@ export function AttendanceTable({
   interviews?: readonly InterviewMark[];
   /** 날짜별 집계 행을 아래에 붙인다(관리자용). */
   showSummary?: boolean;
+  /** 관리자용: 칸을 CellEditProvider의 수정 모드에 연결한다. 모드가 켜지면 칸 클릭이 토글 대신 수정 팝업을 연다. */
+  edit?: boolean;
   today: string;
   /** 주면 오늘과 지난 날짜의 일정 없는 칸을 눌러 미확인(?)을 켜고 끌 수 있다(관리자용). */
   toggle?: (name: string, date: string) => Promise<ToggleResult>;
@@ -348,6 +353,39 @@ export function AttendanceTable({
                         className={cn(CELL_BOX, TYPE_COLOR.출근)}
                       />
                     );
+                const cellKey = `${name}|${day}`;
+                const holiday = dayMarks[day]?.holiday;
+                const member = isMemberOn(name, day);
+                const status: CellStatus = {
+                  record: record ? { type: record.type, period: record.period } : null,
+                  planned: plannedCells.has(cellKey),
+                  added: addedCells.has(cellKey),
+                  interview: interviewed.has(cellKey),
+                  current: record
+                    ? describeRecord(record)
+                    : remoteLooking && morning === "present"
+                      ? "출근(아침 확인)"
+                      : remoteLooking && morning === "unconfirmed"
+                        ? "미확인(아침 확인)"
+                        : marked.has(cellKey)
+                          ? "미확인(?)"
+                          : remoteLooking
+                            ? "기록 없음(계획된 리모트)"
+                            : "기록 없음(출근)",
+                };
+                const blockedReason = !member
+                  ? `${name}은(는) 이 날짜에 소속이 아니라 수정할 수 없습니다.`
+                  : holiday
+                    ? `${holiday} 휴일 칸은 수정할 수 없습니다.`
+                    : undefined;
+                const cell = interviewOn ? (
+                  <div className="relative mx-auto size-5">
+                    {content}
+                    <span role="img" aria-label={`${name} ${day} 면담`} title="면담" className={INTERVIEW_FLAG} />
+                  </div>
+                ) : (
+                  content
+                );
                 return (
                   <TableCell
                     key={day}
@@ -359,18 +397,12 @@ export function AttendanceTable({
                       day === today && "bg-accent",
                     )}
                   >
-                    {interviewOn ? (
-                      <div className="relative mx-auto size-5">
-                        {content}
-                        <span
-                          role="img"
-                          aria-label={`${name} ${day} 면담`}
-                          title="면담"
-                          className={INTERVIEW_FLAG}
-                        />
-                      </div>
+                    {edit ? (
+                      <EditTarget name={name} date={day} status={status} blockedReason={blockedReason}>
+                        {cell}
+                      </EditTarget>
                     ) : (
-                      content
+                      cell
                     )}
                   </TableCell>
                 );
