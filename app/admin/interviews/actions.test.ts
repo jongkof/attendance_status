@@ -9,8 +9,8 @@ vi.mock("@/lib/calendar/store", () => calendar);
 vi.mock("@/lib/interview/store", () => store);
 vi.mock("@/lib/roster/store", () => ({
   getMembers: vi.fn(async () => [
-    { name: "양ㅇㅇ", start: null, removedOn: null },
-    { name: "홍ㅇㅇ", start: "2026-10-15", removedOn: null },
+    { id: 1, name: "양ㅇㅇ", start: null, removedOn: null },
+    { id: 2, name: "홍ㅇㅇ", start: "2026-10-15", removedOn: null },
   ]),
 }));
 
@@ -41,9 +41,9 @@ describe("로그인한 요청", () => {
 
   test("근무일 칸은 켜고 끌 수 있다", async () => {
     expect((await setInterviewCell("양ㅇㅇ", "2026-10-15", true)).ok).toBe(true);
-    expect(store.setInterview).toHaveBeenLastCalledWith("양ㅇㅇ", "2026-10-15", true);
+    expect(store.setInterview).toHaveBeenLastCalledWith("양ㅇㅇ", "2026-10-15", true, 1);
     expect((await setInterviewCell("양ㅇㅇ", "2026-10-15", false)).ok).toBe(true);
-    expect(store.setInterview).toHaveBeenLastCalledWith("양ㅇㅇ", "2026-10-15", false);
+    expect(store.setInterview).toHaveBeenLastCalledWith("양ㅇㅇ", "2026-10-15", false, undefined);
   });
 
   test("휴일 칸과 재직 전 칸은 켜지 않는다", async () => {
@@ -57,6 +57,6 @@ describe("로그인한 요청", () => {
   test("휴일이 된 칸의 이전 면담도 끌 수는 있다", async () => {
     calendar.isHolidayDate.mockResolvedValue(true);
     expect((await setInterviewCell("양ㅇㅇ", "2026-10-09", false)).ok).toBe(true);
-    expect(store.setInterview).toHaveBeenLastCalledWith("양ㅇㅇ", "2026-10-09", false);
+    expect(store.setInterview).toHaveBeenLastCalledWith("양ㅇㅇ", "2026-10-09", false, undefined);
   });
 });

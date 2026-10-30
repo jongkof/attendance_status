@@ -18,13 +18,15 @@ export async function setInterviewCell(name: string, date: string, on: boolean):
     return { ok: false, error: "요청이 올바르지 않습니다." };
   }
   try {
+    let memberId: number | undefined;
     if (on) {
       const [members, isHoliday] = await Promise.all([getMembers(), isHolidayDate(date)]);
       const tenure = tenureOf(members)[name] ?? ALWAYS;
       const check = checkInterviewCell({ date, isHoliday, tenure });
       if (!check.ok) return check;
+      memberId = members.find((member) => member.name === name)?.id;
     }
-    const result = await setInterview(name, date, on);
+    const result = await setInterview(name, date, on, memberId);
     if (result.ok) {
       revalidatePath("/");
       revalidatePath("/admin");

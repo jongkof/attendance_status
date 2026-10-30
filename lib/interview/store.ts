@@ -17,15 +17,19 @@ export async function getInterviews(range?: { from: string; to: string }): Promi
 
 export type WriteResult = { ok: true } | { ok: false; error: string };
 
-/** 한 칸의 면담을 켜거나(true) 끈다(false). */
-export async function setInterview(name: string, date: string, on: boolean): Promise<WriteResult> {
+/** 한 칸의 면담을 켜거나(true) 끈다(false). 호출한 쪽이 팀원 번호를 이미 알면 넘겨서 조회 한 번을 줄인다. */
+export async function setInterview(name: string, date: string, on: boolean, knownMemberId?: number): Promise<WriteResult> {
   const client = supabaseAdmin();
-  const member = await client.from("members").select("id").eq("name", name).maybeSingle<{ id: number }>();
-  if (member.error) return { ok: false, error: `명단을 읽지 못했습니다: ${member.error.message}` };
-  if (!member.data) return { ok: false, error: "팀원 명단에 없는 이름입니다." };
+  let memberId = knownMemberId;
+  if (memberId === undefined) {
+    const member = await client.from("members").select("id").eq("name", name).maybeSingle<{ id: number }>();
+    if (member.error) return { ok: false, error: `명단을 읽지 못했습니다: ${member.error.message}` };
+    if (!member.data) return { ok: false, error: "팀원 명단에 없는 이름입니다." };
+    memberId = member.data.id;
+  }
   const { error } = on
-    ? await client.from("interview_marks").upsert({ member_id: member.data.id, work_date: date })
-    : await client.from("interview_marks").delete().eq("member_id", member.data.id).eq("work_date", date);
+    ? await client.from("interview_marks").upsert({ member_id: memberId, work_date: date })
+    : await client.from("interview_marks").delete().eq("member_id", memberId).eq("work_date", date);
   if (error) return { ok: false, error: `면담을 바꾸지 못했습니다: ${error.message}` };
   return { ok: true };
 }

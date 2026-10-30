@@ -31,7 +31,8 @@ export function InterviewManager({
   setCell: (name: string, date: string, on: boolean) => Promise<Result>;
 }) {
   const [error, setError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
+  // 저장 중에도 다른 칸을 이어서 누를 수 있도록 칸을 잠그지 않는다.
+  const [, startTransition] = useTransition();
   const [shown, applyChange] = useOptimistic(
     new Set(interviews.map((mark) => `${mark.name}|${mark.date}`)),
     (current, change: { key: string; on: boolean }) => {
@@ -67,7 +68,6 @@ export function InterviewManager({
           dayMarks={dayMarks}
           tenures={tenures}
           isInterview={(name, date) => shown.has(`${name}|${date}`)}
-          disabled={pending}
           onToggle={toggle}
         />
       </div>

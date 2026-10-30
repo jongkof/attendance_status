@@ -15,7 +15,7 @@ vi.mock("@/lib/remote/store", () => ({
   renameGroup: vi.fn(),
 }));
 
-vi.mock("@/lib/roster/store", () => ({ getMembers: vi.fn(async () => []) }));
+vi.mock("@/lib/roster/store", () => ({ getMembers: vi.fn(async () => [{ id: 7, name: "양ㅇㅇ", start: null, removedOn: null }]) }));
 
 import { setRemoteCell, setRemoteSkipWeek } from "./actions";
 
@@ -43,9 +43,9 @@ describe("로그인한 요청", () => {
     store.setWeekOverride.mockResolvedValue({ ok: true });
 
     await setRemoteCell("양ㅇㅇ", "2026-10-15", true);
-    expect(store.setCellEdit).toHaveBeenLastCalledWith("양ㅇㅇ", "2026-10-15", "add");
+    expect(store.setCellEdit).toHaveBeenLastCalledWith("양ㅇㅇ", "2026-10-15", "add", 7);
     await setRemoteCell("양ㅇㅇ", "2026-10-15", false);
-    expect(store.setCellEdit).toHaveBeenLastCalledWith("양ㅇㅇ", "2026-10-15", null);
+    expect(store.setCellEdit).toHaveBeenLastCalledWith("양ㅇㅇ", "2026-10-15", null, 7);
 
     await setRemoteSkipWeek("2026-10-12", true);
     expect(store.setWeekOverride).toHaveBeenLastCalledWith("2026-10-12", true);
