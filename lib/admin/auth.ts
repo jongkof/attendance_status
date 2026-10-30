@@ -7,7 +7,10 @@ import { getCredential, sessionSecret, type Credential } from "./credential";
 import { createSessionToken, SESSION_MAX_AGE_SECONDS, verifySessionToken } from "./session";
 
 const COOKIE = "admin_session";
-const COOKIE_PATH = "/admin";
+// 관리자로 로그인하면 현황표(`/`)도 열려야 하므로 쿠키를 사이트 전체에 보낸다.
+const COOKIE_PATH = "/";
+// 현황표가 팀 잠금에 들어가기 전에는 `/admin`에만 보냈다. 그때 만든 쿠키도 로그아웃 때 함께 지운다.
+const LEGACY_COOKIE_PATH = "/admin";
 
 /** 지금 요청이 로그인한 관리자의 것인지. 읽기에 실패하면 로그인하지 않은 것으로 다룬다. */
 export async function isAdmin(): Promise<boolean> {
@@ -37,5 +40,7 @@ export async function startSession(credential: Credential): Promise<void> {
 }
 
 export async function endSession(): Promise<void> {
-  (await cookies()).delete({ name: COOKIE, path: COOKIE_PATH });
+  const store = await cookies();
+  store.delete({ name: COOKIE, path: COOKIE_PATH });
+  store.delete({ name: COOKIE, path: LEGACY_COOKIE_PATH });
 }

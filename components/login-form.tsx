@@ -16,10 +16,14 @@ export function LoginForm({
   action,
   next,
   notice,
+  title = "관리자 로그인",
+  description = "근태 관리자만 쓸 수 있는 화면입니다. 관리자 비밀번호를 입력해 주세요.",
 }: {
   action: (state: FormState, formData: FormData) => Promise<FormState>;
   next: string;
   notice?: string;
+  title?: string;
+  description?: string;
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
 
@@ -27,8 +31,8 @@ export function LoginForm({
     <Card className="w-full max-w-sm">
       <form action={formAction}>
         <CardHeader>
-          <CardTitle>관리자 로그인</CardTitle>
-          <CardDescription>근태 관리자만 쓸 수 있는 화면입니다. 관리자 비밀번호를 입력해 주세요.</CardDescription>
+          <CardTitle>{title}</CardTitle>
+          <CardDescription>{description}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           {notice ? (

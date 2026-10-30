@@ -5,7 +5,10 @@ import { AttendanceTable } from "@/components/attendance-table";
 import { MonthNav } from "@/components/month-nav";
 import { PageShell } from "@/components/page-shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { parseMonth, todayInSeoul, weekdaysOfMonth } from "@/lib/attendance";
+import { teamLogout } from "@/lib/team/actions";
+import { requireViewer } from "@/lib/team/auth";
 
 import { loadMonth } from "@/app/load-month";
 
@@ -16,11 +19,21 @@ export default async function Home({
 }) {
   const today = todayInSeoul();
   const requested = (await searchParams).month;
-  const { year, month } =
-    (typeof requested === "string" ? parseMonth(requested) : null) ?? parseMonth(today.slice(0, 7))!;
+  const parsed = typeof requested === "string" ? parseMonth(requested) : null;
+  await requireViewer(parsed ? `/?month=${requested}` : "/");
+  const { year, month } = parsed ?? parseMonth(today.slice(0, 7))!;
   const days = weekdaysOfMonth(year, month);
 
-  const monthNav = <MonthNav basePath="/" year={year} month={month} />;
+  const monthNav = (
+    <div className="flex flex-wrap items-center gap-2">
+      <MonthNav basePath="/" year={year} month={month} />
+      <form action={teamLogout}>
+        <Button type="submit" variant="outline" size="sm">
+          로그아웃
+        </Button>
+      </form>
+    </div>
+  );
   const title = `${year}년 ${month}월 근태 현황`;
 
   let view: Awaited<ReturnType<typeof loadMonth>> | null = null;
