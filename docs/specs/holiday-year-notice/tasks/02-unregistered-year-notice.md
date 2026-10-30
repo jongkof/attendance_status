@@ -44,13 +44,13 @@ verification pass. Use `superseded` only after an approved replacement of a
 task with recorded completion history. Preserve its Execution evidence and name
 the replacement and reason under Revision; it is then terminal for that approved
 breakdown and outside the current delivery map. -->
-pending
+in-progress
 
 ## Execution
 
 <!-- Append concise evidence and preserve earlier entries when status changes.
 Execution Blocker is the current impediment for an active task, not a declared
 task dependency. In a superseded task, preserved entries are historical. -->
-- Verification: —
-- Blocker: —
+- Verification: 단위·컴포넌트 테스트(lib/calendar/year-registration.test.ts, components/year-notice-alert.test.tsx), lint, typecheck 통과. 실제 화면(2031년 안내, 2026년 무안내, 로그인 전 접근, 내년 안내, 등록 후 사라짐)은 아직 확인하지 못했다.
+- Blocker: 이 worktree에 `.env.local`이 없어 개발 서버가 Supabase에 연결되지 않는다. 사용자가 환경 파일을 제공하고 관리자 로그인을 해야 실제 화면 확인을 끝낼 수 있다.
 - Revision: —
