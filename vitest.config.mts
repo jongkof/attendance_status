@@ -9,6 +9,9 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./vitest.setup.ts"],
     passWithNoTests: true,
+    // 22명 x 날짜 칸을 그리는 컴포넌트 테스트는 CPU 부하가 높으면 기본 5초를 넘긴다.
+    testTimeout: 30_000,
+    hookTimeout: 30_000,
     exclude: [
       "node_modules/**",
       ".next/**",
