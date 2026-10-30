@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 import { RemoteGroupsEditor } from "@/components/remote-groups-editor";
 import { RemoteRuleEditor, type RuleDraft } from "@/components/remote-rule-editor";
 import { RemoteTable } from "@/components/remote-table";
+import { RemoteCaptureButtons } from "@/components/table-capture-buttons";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -256,6 +257,14 @@ export function RemoteManager({ setup, entries, records, days, today, actions }:
               휴일·리모트 없는 주·다른 근태 기록(기록이 우선)
             </li>
           </ul>
+          <RemoteCaptureButtons
+            groups={groups}
+            unassigned={unassigned}
+            days={days}
+            dayMarks={dayMarks}
+            isSkipWeek={plan.isSkipWeek}
+            isPlanned={plan.isPlanned}
+          />
           <div className="overflow-x-auto">
             <RemoteTable
               groups={groups}

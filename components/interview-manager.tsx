@@ -4,6 +4,7 @@ import { CircleAlertIcon } from "lucide-react";
 import { useOptimistic, useState, useTransition } from "react";
 
 import { InterviewTable } from "@/components/interview-table";
+import { InterviewCaptureButtons } from "@/components/table-capture-buttons";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import type { DayMark } from "@/lib/calendar";
 import type { InterviewMark } from "@/lib/interview";
@@ -59,6 +60,13 @@ export function InterviewManager({
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       ) : null}
+      <InterviewCaptureButtons
+        blocks={blocks}
+        days={days}
+        dayMarks={dayMarks}
+        tenures={tenures}
+        isInterview={(name, date) => shown.has(`${name}|${date}`)}
+      />
       <div className="overflow-x-auto">
         <InterviewTable
           blocks={blocks}
