@@ -1,0 +1,769 @@
+<!--
+  prototype shell: the review chrome every prototype starts from.
+
+  Keep this comment in the prototype you grow from here: it is the contract,
+  and later turns work from that file rather than from this one.
+
+  Contract (extend product screens; keep the review shell):
+  - Product:  .sh-stage contains only end-user product UI. Keep review notes,
+               rationale, instructions, and approval controls in conversation.
+  - Screens:  <section data-screen="slug" data-title="Label"> inside .sh-stage.
+               The selector, arrow keys, and #hash routing build themselves.
+               Use one option per product destination or distinct surface,
+               named by its product role. Keep baselines, variants, comparison
+               labels, steps, indexes, and progress out of names and states.
+               Links may use href="#slug".
+  - States:   "Default" is automatic. A screen declares only representative
+               presets in data-states="Empty,Error". Use natural, screen-specific
+               names. Reserve presets for important multi-step results, forced
+               data or errors, or materially different structure; keep one-click
+               and transient states as interactions. Use data-when="Empty" on
+               preset-only elements. Call prototypeShell.setState("Name") on
+               entry and setState("Default") on exit, including when repeated
+               actions cross a preset condition.
+  - Viewport: "vp (m)" cycles full / 390 / 768. The 390 preset is a
+               fixed-height, internally scrolling phone frame. Start a
+               mobile-first prototype by adding class="sh-vp-390" to <body>
+               (or a bootstrap classList.add before the chrome script runs).
+  - Pinning:  keep in-frame bars (tab bars, CTAs) inside the phone with
+               position: sticky; position: fixed pins to the browser window.
+  - Tokens:   replace the project-tokens block with project tokens copied
+               verbatim. Map differing names to --background, --foreground, and
+               --font afterwards; replace network fonts with a system stack and
+               note that substitution. Without a design system, keep this
+               palette as the finished style. When the project ships dark
+               tokens, copy them under .sh-theme-dark, which the shell sets
+               on both the root element and body, so :root.sh-theme-dark and
+               body.sh-theme-dark work too. A .dark class or a
+               prefers-color-scheme media query copied verbatim would follow
+               the reviewer's system instead of the toggle.
+  - Theme:    the light / dark switch (t) changes the product surface only.
+               It appears only when a .sh-theme-dark rule declares dark tokens,
+               so a prototype without them carries no theme control. Prototypes
+               always load light; the review bar keeps its own dark styling in
+               both themes so it still reads as chrome.
+  - Placeholders: .wf-pic stands in for pictures the prototype has no real
+               files for. Use real text everywhere text belongs.
+
+  - Chrome:   Keep exactly the screen selector, selected-screen state selector,
+               viewport cycle, and theme toggle.
+
+  Self-contained by design: no build, no framework, no network.
+-->
+<meta charset="utf-8">
+<title>개별 수정 시안</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  /* ── project tokens (app/globals.css) ── */
+  :root {
+    --att-work: oklch(0.86 0.12 150);
+    --att-work-foreground: oklch(0.32 0.09 150);
+    --att-leave: oklch(0.87 0.09 25);
+    --att-leave-foreground: oklch(0.36 0.14 25);
+    --att-half: oklch(0.89 0.08 345);
+    --att-half-foreground: oklch(0.38 0.13 345);
+    --att-remote: oklch(0.9 0.12 85);
+    --att-remote-foreground: oklch(0.38 0.09 75);
+    --att-trip: oklch(0.87 0.08 250);
+    --att-trip-foreground: oklch(0.35 0.12 255);
+    --att-training: oklch(0.87 0.09 300);
+    --att-training-foreground: oklch(0.36 0.14 300);
+    --att-checkup: oklch(0.88 0.08 195);
+    --att-checkup-foreground: oklch(0.35 0.08 200);
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.145 0 0);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.145 0 0);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.145 0 0);
+    --primary: oklch(0.205 0 0);
+    --primary-foreground: oklch(0.985 0 0);
+    --secondary: oklch(0.97 0 0);
+    --secondary-foreground: oklch(0.205 0 0);
+    --muted: oklch(0.97 0 0);
+    --muted-foreground: oklch(0.556 0 0);
+    --accent: oklch(0.97 0 0);
+    --accent-foreground: oklch(0.205 0 0);
+    --destructive: oklch(0.577 0.245 27.325);
+    --border: oklch(0.922 0 0);
+    --input: oklch(0.922 0 0);
+    --ring: oklch(0.708 0 0);
+    --radius: 0.625rem;
+    --att-interview: oklch(0.55 0.22 295);
+    --group-a: oklch(0.975 0.014 95);
+    --group-b: oklch(0.97 0.016 245);
+    --font: system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  }
+  .sh-theme-dark {
+    color-scheme: dark;
+    --att-work: oklch(0.42 0.1 150);
+    --att-work-foreground: oklch(0.93 0.07 150);
+    --att-leave: oklch(0.42 0.12 25);
+    --att-leave-foreground: oklch(0.93 0.05 25);
+    --att-half: oklch(0.43 0.11 345);
+    --att-half-foreground: oklch(0.93 0.05 345);
+    --att-remote: oklch(0.45 0.1 80);
+    --att-remote-foreground: oklch(0.94 0.07 85);
+    --att-trip: oklch(0.42 0.11 250);
+    --att-trip-foreground: oklch(0.93 0.05 250);
+    --att-training: oklch(0.42 0.12 300);
+    --att-training-foreground: oklch(0.93 0.05 300);
+    --att-checkup: oklch(0.42 0.08 195);
+    --att-checkup-foreground: oklch(0.93 0.05 195);
+    --background: oklch(0.145 0 0);
+    --foreground: oklch(0.985 0 0);
+    --card: oklch(0.205 0 0);
+    --card-foreground: oklch(0.985 0 0);
+    --popover: oklch(0.205 0 0);
+    --popover-foreground: oklch(0.985 0 0);
+    --primary: oklch(0.922 0 0);
+    --primary-foreground: oklch(0.205 0 0);
+    --secondary: oklch(0.269 0 0);
+    --secondary-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.269 0 0);
+    --muted-foreground: oklch(0.708 0 0);
+    --accent: oklch(0.269 0 0);
+    --accent-foreground: oklch(0.985 0 0);
+    --destructive: oklch(0.704 0.191 22.216);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.556 0 0);
+  }
+
+  /* ── review chrome (sh-*): keep; extend product styles elsewhere ── */
+  * { box-sizing: border-box }
+  body {
+    margin: 0; padding: 0 0 40px;
+    background: var(--background, #f6f6f6); color: var(--foreground, #3a3a3a);
+    font-family: var(--font, system-ui, sans-serif);
+  }
+  .sh-bar {
+    position: sticky; top: 0; z-index: 999;
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+    padding: 8px 12px; background: #191a1c; color: #d7d7d7;
+    font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  .sh-bar b, .sh-control-label { color: #8a8f98; font-weight: 500 }
+  .sh-control { display: inline-flex; gap: 5px; align-items: center }
+  .sh-bar button {
+    border: 1px solid #3a3d42; background: none; color: inherit;
+    font: inherit; padding: 2px 9px; border-radius: 99px; cursor: pointer;
+  }
+  .sh-bar select {
+    width: 170px; border: 1px solid #3a3d42; background: #232428; color: inherit;
+    font: inherit; padding: 3px 28px 3px 9px; border-radius: 7px; cursor: pointer;
+    color-scheme: dark;
+  }
+  #sh-screen { width: 190px }
+  .sh-bar button.on { background: #d7d7d7; color: #191a1c; border-color: #d7d7d7 }
+  .sh-theme { display: inline-flex; border: 1px solid #3a3d42; border-radius: 99px; overflow: hidden }
+  .sh-theme button { border: 0; border-radius: 0; padding: 2px 10px }
+  .sh-spacer { flex: 1 }
+  .sh-stage { max-width: 960px; margin: 0 auto; padding: 12px 16px 0 }
+  [hidden] { display: none !important }
+
+  /* viewport presets */
+  .sh-vp-390 .sh-stage {
+    max-width: 390px; background: var(--background, #f6f6f6);
+    border: 10px solid #191a1c; border-radius: 28px;
+    padding: 16px 12px; height: min(844px, calc(100dvh - 52px));
+    overflow-y: auto; margin-top: 12px;
+  }
+  .sh-vp-768 .sh-stage {
+    max-width: 768px; border: 1px solid #c4c4c4; border-radius: 12px;
+    padding: 16px; margin-top: 12px;
+  }
+
+  /* placeholders */
+  .wf-pic  { border-radius: 4px; background:
+             repeating-linear-gradient(45deg, #e9e9e9, #e9e9e9 6px, #f2f2f2 6px, #f2f2f2 12px) }
+  .sh-theme-dark .wf-pic { background: repeating-linear-gradient(45deg,
+             color-mix(in srgb, var(--foreground) 16%, transparent) 0 6px,
+             color-mix(in srgb, var(--foreground) 8%, transparent) 6px 12px) }
+
+  /* ── product styles: admin attendance board with cell-edit mode ── */
+  .sh-stage { container-type: inline-size; max-width: 1280px }
+  .sh-vp-390 .sh-stage { max-width: 390px }
+  .sh-vp-768 .sh-stage { max-width: 768px }
+  .board { position: relative; display: grid; gap: .75rem; min-width: 0 }
+  .bhead { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: center; justify-content: space-between }
+  .bhead h1 { font-size: 1.125rem; font-weight: 600; margin: 0 }
+  .bhead p { margin: .15rem 0 0; font-size: .8125rem; color: var(--muted-foreground) }
+  .sw-wrap { display: inline-flex; align-items: center; gap: .5rem; font-size: .875rem; font-weight: 500 }
+  .switch { position: relative; width: 2.25rem; height: 1.25rem; border-radius: 99px; border: 1px solid var(--input); background: var(--muted); padding: 0; cursor: pointer; transition: background .15s }
+  .switch::after { content: ""; position: absolute; top: 1px; left: 1px; width: calc(1.25rem - 4px); height: calc(1.25rem - 4px); border-radius: 50%; background: var(--background); border: 1px solid var(--input); transition: transform .15s }
+  .switch[aria-checked=true] { background: var(--primary); border-color: var(--primary) }
+  .switch[aria-checked=true]::after { transform: translateX(1rem) }
+  .switch:focus-visible { outline: 3px solid color-mix(in oklab, var(--ring) 50%, transparent) }
+  .pill { display: inline-flex; align-items: center; gap: .25rem; font-size: .6875rem; font-weight: 600; line-height: 1.1rem; padding: 0 .45rem; border-radius: 99px; background: var(--primary); color: var(--primary-foreground) }
+  .mbar { display: flex; flex-wrap: wrap; gap: .25rem .75rem; align-items: center; justify-content: space-between; background: var(--primary); color: var(--primary-foreground); border-radius: var(--radius); padding: .5rem .75rem; font-size: .8125rem }
+  .mbar b { font-weight: 600 }
+  .mbar .last { opacity: .8; font-size: .75rem; flex-basis: 100% }
+  .mbar button { font: inherit; font-size: .75rem; height: 1.5rem; padding: 0 .55rem; border-radius: calc(var(--radius) * .6); border: 1px solid color-mix(in oklab, var(--primary-foreground) 45%, transparent); background: none; color: inherit; cursor: pointer }
+  .quietnote { font-size: .75rem; color: var(--muted-foreground); min-height: 1rem }
+  .legend { display: flex; flex-wrap: wrap; gap: .35rem 1rem; font-size: .75rem; color: var(--muted-foreground); list-style: none; padding: 0; margin: 0 }
+  .legend li { display: flex; align-items: center; gap: .3rem }
+  .lg { display: inline-flex; width: 1rem; height: 1rem; border-radius: 2px; align-items: center; justify-content: center; font-size: 10px; font-weight: 600 }
+
+  .tw { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--background) }
+  .board.edit .tw { border: 2px dashed var(--foreground) }
+  .board.edit.quiet .tw { border: 2px solid var(--foreground) }
+  table.at { border-collapse: collapse; table-layout: fixed; font-size: .8125rem; width: 100%; min-width: 29rem }
+  .at th, .at td { border-bottom: 1px solid var(--border); padding: 0 }
+  .at thead th { text-align: center; font-weight: 500; padding: .125rem 0; background: var(--background); line-height: 1.25; min-width: 1.5rem }
+  .at thead th.nm { position: sticky; left: 1.75rem; z-index: 12; text-align: left; padding-left: .5rem }
+  .at thead th.sg { position: sticky; left: 0; z-index: 12; width: 1.75rem; min-width: 1.75rem }
+  .at .wd { display: block; font-size: .6875rem; color: var(--muted-foreground); font-weight: 400 }
+  .at .hn { display: block; font-size: 9px; color: var(--destructive); line-height: 1; overflow: hidden; white-space: nowrap }
+  .at .red, .at .red .wd { color: var(--destructive) }
+  .at td, .at thead th { text-align: center }
+  .at td { width: 1.5rem; min-width: 1.5rem; padding: 1px 2px; position: relative }
+  .at .wk { border-left: 2px solid color-mix(in oklab, var(--foreground) 25%, transparent) }
+  .at .today { background: var(--accent) !important; color: var(--accent-foreground) }
+  .at tr.ga { background: var(--group-a) }
+  .at tr.gb { background: var(--group-b) }
+  .at tbody th.nmc { position: sticky; left: 1.75rem; z-index: 11; background: inherit; text-align: left; padding: 0 .5rem; font-weight: 500; white-space: nowrap; box-shadow: 1px 0 0 var(--border) }
+  .at tbody th.strip { position: sticky; left: 0; z-index: 11; width: 1.75rem; background: var(--muted); writing-mode: vertical-rl; text-align: center; font-weight: 600; font-size: .75rem; border-right: 1px solid var(--border) }
+  .at tr.gs > * { border-top: 2px solid color-mix(in oklab, var(--foreground) 25%, transparent) }
+  .at tr.gs:first-child > * { border-top: 0 }
+  .at tfoot th { position: sticky; left: 0; background: var(--background); text-align: left; padding: 0 .5rem; font-size: .75rem; font-weight: 500; z-index: 11 }
+  .at tfoot td { font-size: .75rem; color: var(--muted-foreground); height: 1.4rem }
+  .at tfoot tr:first-child > * { border-top: 2px solid color-mix(in oklab, var(--foreground) 25%, transparent) }
+
+  .cw { position: relative; display: block; width: 20px; height: 20px; margin: 0 auto }
+  .c { display: block; width: 20px; height: 20px; margin: 0; border-radius: 2px; border: 0; padding: 0; font: inherit; font-size: 11px; line-height: 20px; font-weight: 600; text-align: center; color: inherit; background: none; appearance: none; position: relative; transition: background .15s }
+  .c.t-work { background: var(--att-work); color: var(--att-work-foreground) }
+  .c.t-leave { background: var(--att-leave); color: var(--att-leave-foreground) }
+  .c.t-half { background: var(--att-half); color: var(--att-half-foreground) }
+  .c.t-remote { background: var(--att-remote); color: var(--att-remote-foreground) }
+  .c.t-trip { background: var(--att-trip); color: var(--att-trip-foreground) }
+  .c.t-training { background: var(--att-training); color: var(--att-training-foreground) }
+  .c.t-checkup { background: var(--att-checkup); color: var(--att-checkup-foreground) }
+  .c.unk { border: 1px dashed color-mix(in oklab, var(--foreground) 50%, transparent); background: var(--background); font-size: 13px; line-height: 18px; font-weight: 700; color: var(--muted-foreground) }
+  .c.hol { background: var(--muted) }
+  .c.nm { border: 1px dotted color-mix(in oklab, var(--foreground) 20%, transparent); opacity: .4 }
+  .c .pl { font-style: normal; font-size: 9px; vertical-align: top; margin-left: -1px }
+  .fl { position: absolute; top: 0; right: 0; width: 8px; height: 8px; border-top-right-radius: 2px; background: var(--att-interview); clip-path: polygon(0 0, 100% 0, 100% 100%); pointer-events: none }
+  /* toggle mode (edit off): same hover as today's app */
+  .board:not(.edit) .c.tg { cursor: pointer }
+  .board:not(.edit) .c.tg:hover { box-shadow: 0 0 0 2px color-mix(in oklab, var(--foreground) 50%, transparent) }
+  /* edit mode: stronger pointer + solid hover outline, blocked cells get a not-allowed cursor */
+  .board.edit .c.ed { cursor: pointer }
+  .board.edit .c.ed:hover { outline: 2px solid var(--foreground); outline-offset: 1px; z-index: 5 }
+  .board.edit .c.bl { cursor: not-allowed }
+  .c.target { outline: 2px solid var(--foreground); outline-offset: 1px; z-index: 5 }
+  .c.flash { animation: flash 1.2s ease-out }
+  @keyframes flash { 0% { box-shadow: 0 0 0 3px var(--foreground) } 100% { box-shadow: 0 0 0 3px transparent } }
+  .c:focus-visible { outline: 3px solid color-mix(in oklab, var(--ring) 70%, transparent); outline-offset: 1px }
+
+  /* popup shared */
+  .pop { position: absolute; z-index: 50; background: var(--popover); color: var(--popover-foreground); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: 0 8px 28px color-mix(in oklab, var(--foreground) 20%, transparent); padding: .625rem; display: grid; gap: .5rem; overflow: auto; text-align: left; font-size: .8125rem; text-wrap: pretty }
+  .pop h3 { margin: 0; font-size: .875rem; font-weight: 600 }
+  .pop .ph { display: flex; justify-content: space-between; align-items: start; gap: .5rem }
+  .x { font: inherit; width: 1.5rem; height: 1.5rem; border: 0; background: none; border-radius: calc(var(--radius) * .6); cursor: pointer; color: var(--muted-foreground); line-height: 1 }
+  .x:hover { background: var(--accent) }
+  .st { display: flex; flex-wrap: wrap; gap: .25rem; margin-top: .3rem }
+  .tag { font-size: .6875rem; line-height: 1.1rem; padding: 0 .45rem; border-radius: 99px; border: 1px solid var(--border); background: var(--muted); color: var(--foreground); white-space: nowrap }
+  .tag.on { background: var(--secondary); border-color: var(--input) }
+  .tag.iv { background: color-mix(in oklab, var(--att-interview) 18%, var(--background)); border-color: color-mix(in oklab, var(--att-interview) 45%, transparent) }
+  .sec { display: grid; gap: .25rem; border-top: 1px solid var(--border); padding-top: .5rem }
+  .sec > h4 { margin: 0; font-size: .6875rem; font-weight: 600; color: var(--muted-foreground); letter-spacing: .02em }
+  .sec > .hint { margin: 0; font-size: .6875rem; color: var(--muted-foreground) }
+  .sw1 { display: inline-flex; width: 1.25rem; height: 1.25rem; border-radius: 3px; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex: none }
+  .sw1.t-work { background: var(--att-work); color: var(--att-work-foreground) }
+  .sw1.t-leave { background: var(--att-leave); color: var(--att-leave-foreground) }
+  .sw1.t-half { background: var(--att-half); color: var(--att-half-foreground) }
+  .sw1.t-remote { background: var(--att-remote); color: var(--att-remote-foreground) }
+  .sw1.t-trip { background: var(--att-trip); color: var(--att-trip-foreground) }
+  .sw1.t-training { background: var(--att-training); color: var(--att-training-foreground) }
+  .sw1.t-checkup { background: var(--att-checkup); color: var(--att-checkup-foreground) }
+  .sw1.none { border: 1px dashed color-mix(in oklab, var(--foreground) 45%, transparent) }
+  .opt { font: inherit; font-size: .8125rem; color: inherit; cursor: pointer; background: none; border: 0; text-align: left }
+  .opt:hover { background: var(--accent) }
+  .opt:focus-visible { outline: 2px solid var(--ring); outline-offset: -1px }
+  .opt:disabled { opacity: .45; cursor: not-allowed; background: none }
+  .opt.cur { box-shadow: inset 0 0 0 1px var(--foreground) }
+  .subs { display: flex; flex-wrap: wrap; gap: .25rem }
+  .subs button { font: inherit; font-size: .75rem; height: 1.625rem; padding: 0 .55rem; border-radius: calc(var(--radius) * .7); border: 1px solid var(--input); background: var(--background); cursor: pointer; color: inherit }
+  .subs button:hover { background: var(--accent); border-color: var(--foreground) }
+  .subs button.cur { border-color: var(--foreground); background: var(--secondary) }
+  .subhint { font-size: .6875rem; color: var(--muted-foreground); width: 100% }
+  .act { font: inherit; font-size: .8125rem; height: 1.875rem; padding: 0 .6rem; border-radius: calc(var(--radius) * .8); border: 1px solid var(--input); background: var(--background); color: inherit; cursor: pointer; text-align: left; display: flex; align-items: center; gap: .4rem; width: 100% }
+  .act:hover { background: var(--accent); border-color: var(--foreground) }
+  .act.danger { color: var(--destructive) }
+  .act .ic { width: 1rem; text-align: center; font-weight: 700 }
+  .act:disabled { opacity: .45; cursor: not-allowed }
+  .act:disabled:hover { background: var(--background); border-color: var(--input) }
+
+  /* popup (확정: 목록형, 칸 옆) */
+  .pop.list { width: 15.5rem }
+  .pop.list .li { display: flex; align-items: center; gap: .5rem; width: 100%; height: 1.75rem; padding: 0 .4rem; border-radius: calc(var(--radius) * .7) }
+  .pop.list .li .go { margin-left: auto; color: var(--muted-foreground); font-size: .6875rem }
+  .pop.list .subs { padding: .15rem 0 .25rem 2.15rem }
+
+
+  .tip { position: absolute; z-index: 60; background: var(--foreground); color: var(--background); font-size: .75rem; padding: .35rem .55rem; border-radius: calc(var(--radius) * .7); max-width: 14rem; pointer-events: none; box-shadow: 0 4px 14px color-mix(in oklab, var(--foreground) 25%, transparent) }
+</style>
+
+<header class="sh-bar">
+  <b>proto</b>
+  <label class="sh-control"><span class="sh-control-label">screen</span><select id="sh-screen"></select></label>
+  <span class="sh-spacer"></span>
+  <label class="sh-control"><span class="sh-control-label">state</span><select id="sh-state"></select></label>
+  <button id="sh-vp">vp: full (m)</button>
+  <div class="sh-theme" id="sh-theme" role="group" aria-label="theme (t)" hidden>
+    <button data-theme="light">light</button><button data-theme="dark">dark</button>
+  </div>
+</header>
+
+<main class="sh-stage">
+  <section data-screen="admin-board" data-title="관리자 현황표" data-states="수정 모드 켬,팝업 열림,반차 구분 고르는 중,오른쪽 끝 칸 팝업,왼쪽 끝 칸 팝업,수정 불가 칸 안내"><div id="board"></div></section>
+</main>
+
+<script>
+  const stage = document.querySelector('.sh-stage');
+  const screens = [...stage.querySelectorAll('[data-screen]')];
+  const screenSelect = document.getElementById('sh-screen');
+  const stateSelect = document.getElementById('sh-state');
+  const vpBtn = document.getElementById('sh-vp');
+  const themeCtl = document.getElementById('sh-theme');
+  const themeBtns = [...themeCtl.querySelectorAll('button')];
+  let current = null;
+  let currentStates = [];
+
+  screens.forEach(s => {
+    const option = document.createElement('option');
+    option.textContent = s.dataset.title || s.dataset.screen;
+    option.value = s.dataset.screen;
+    screenSelect.append(option);
+  });
+  screenSelect.onchange = () => show(screenSelect.value);
+
+  function show(slug) {
+    current = screens.find(s => s.dataset.screen === slug) || screens[0];
+    screens.forEach(s => s.hidden = s !== current);
+    screenSelect.value = current.dataset.screen;
+    history.replaceState(null, '', '#' + current.dataset.screen);
+    buildStates();
+  }
+
+  function buildStates() {
+    const declared = (current.dataset.states || '').split(',').map(x => x.trim()).filter(Boolean);
+    currentStates = ['Default', ...declared.filter(name => name !== 'Default')];
+    stateSelect.innerHTML = '';
+    currentStates.forEach(name => {
+      const option = document.createElement('option');
+      option.textContent = name;
+      option.value = name;
+      stateSelect.append(option);
+    });
+    applyState('Default');
+  }
+
+  function applyState(name) {
+    const active = currentStates.includes(name) ? name : 'Default';
+    current.querySelectorAll('[data-when]').forEach(el => {
+      el.hidden = !el.dataset.when.split(',').map(x => x.trim()).includes(active);
+    });
+    stateSelect.value = active;
+  }
+  stateSelect.onchange = () => applyState(stateSelect.value);
+
+  window.prototypeShell = {
+    showScreen: show,
+    setState: applyState,
+    getScreen: () => current?.dataset.screen,
+    getState: () => stateSelect.value
+  };
+
+  const VPS = ['full', '390', '768'];
+  let vp = VPS.find(v => document.body.classList.contains('sh-vp-' + v)) || 'full';
+  function applyVp() {
+    VPS.forEach(v => document.body.classList.toggle('sh-vp-' + v, v === vp && v !== 'full'));
+    vpBtn.textContent = 'vp: ' + vp + ' (m)';
+    vpBtn.classList.toggle('on', vp !== 'full');
+  }
+  vpBtn.onclick = () => { vp = VPS[(VPS.indexOf(vp) + 1) % VPS.length]; applyVp(); };
+  applyVp();
+
+  const hasDark = [...document.styleSheets].some(sheet => {
+    try {
+      return [...sheet.cssRules].some(rule => (rule.selectorText || '')
+        .split(',').some(part => /\.sh-theme-dark$/.test(part.trim())));
+    } catch { return false }
+  });
+  let dark = false;
+  function applyTheme() {
+    document.documentElement.classList.toggle('sh-theme-dark', dark);
+    document.body.classList.toggle('sh-theme-dark', dark);
+    themeBtns.forEach(b => b.classList.toggle('on', (b.dataset.theme === 'dark') === dark));
+  }
+  themeCtl.hidden = !hasDark;
+  themeBtns.forEach(b => b.onclick = () => { dark = b.dataset.theme === 'dark'; applyTheme(); });
+  applyTheme();
+
+  addEventListener('keydown', e => {
+    if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+    const i = screens.indexOf(current);
+    if (e.key === 'ArrowRight') show(screens[(i + 1) % screens.length].dataset.screen);
+    if (e.key === 'ArrowLeft') show(screens[(i - 1 + screens.length) % screens.length].dataset.screen);
+    if (e.key === 'm') vpBtn.click();
+    if (e.key === 't' && !themeCtl.hidden) { dark = !dark; applyTheme(); }
+  });
+
+  addEventListener('hashchange', () => show(location.hash.slice(1)));
+  show(location.hash.slice(1));
+
+/* ── product script: dummy-data board (no real data, no network) ── */
+const Board = (() => {
+  const TODAY = '2026-10-30';
+  const DAYS = ['2026-10-19','2026-10-20','2026-10-21','2026-10-22','2026-10-23','2026-10-26','2026-10-27','2026-10-28','2026-10-29','2026-10-30','2026-11-02','2026-11-03','2026-11-04','2026-11-05','2026-11-06'];
+  const WD = ['일','월','화','수','목','금','토'];
+  const HOL = { '2026-10-28': '창립기념일' };
+  const META = {
+    '출근': { l: '', c: 'work' }, '휴가': { l: '휴', c: 'leave' }, '반차': { l: '반', c: 'half' },
+    '반반차': { l: '반', c: 'half' }, '리모트': { l: '리', c: 'remote' }, '출장': { l: '출', c: 'trip' },
+    '교육': { l: '교', c: 'training' }, '건강검진': { l: '건', c: 'checkup' }
+  };
+  const PARTS = { '반차': ['오전', '오후'], '반반차': ['오전1', '오전2', '오후1', '오후2'] };
+  const GROUPS = [
+    ['1조', ['김ㅇㅇ', '이ㅇㅇ', '박ㅇㅇ', '최ㅇㅇ', '정ㅇㅇ', '강ㅇㅇ']],
+    ['2조', ['조ㅇㅇ', '윤ㅇㅇ', '장ㅇㅇ', '임ㅇㅇ', '한ㅇㅇ', '오ㅇㅇ']],
+    ['3조', ['서ㅇㅇ', '신ㅇㅇ', '권ㅇㅇ', '황ㅇㅇ', '안ㅇㅇ']],
+    ['4조', ['송ㅇㅇ', '류ㅇㅇ', '전ㅇㅇ', '홍ㅇㅇ', '고ㅇㅇ']]
+  ];
+  const RANGE = { '한ㅇㅇ': ['2026-10-27', null], '홍ㅇㅇ': [null, '2026-10-23'] };
+  const key = (n, d) => n + '|' + d;
+  const info = d => { const [y, m, dd] = d.split('-').map(Number); return { m, d: dd, wd: new Date(y, m - 1, dd).getDay() } };
+  const label = d => { const i = info(d); return `${i.m}/${i.d}(${WD[i.wd]})` };
+  const isMember = (n, d) => { const r = RANGE[n]; return !r || ((!r[0] || d >= r[0]) && (!r[1] || d <= r[1])) };
+
+  function seed() {
+    const cells = {};
+    const get = (n, d) => cells[key(n, d)] || (cells[key(n, d)] = { rec: null, unc: false, morning: null, plan: null, iv: false });
+    let i = 0;
+    GROUPS.forEach(([, ms]) => ms.forEach(n => {
+      const wd = i++ % 5 + 1;
+      DAYS.forEach(d => { if (isMember(n, d) && !HOL[d] && info(d).wd === wd) get(n, d).plan = 'rule' });
+    }));
+    const rec = (n, d, type, part) => { get(n, d).rec = { type, part: part || null } };
+    rec('이ㅇㅇ', '2026-10-21', '휴가'); rec('이ㅇㅇ', '2026-10-22', '휴가');
+    rec('박ㅇㅇ', '2026-10-27', '반차', '오전'); rec('최ㅇㅇ', '2026-10-29', '반반차', '오후1');
+    get('정ㅇㅇ', '2026-10-29').plan = 'rule'; rec('정ㅇㅇ', '2026-10-29', '휴가'); get('정ㅇㅇ', '2026-10-29').iv = true;
+    rec('강ㅇㅇ', '2026-10-26', '출장'); rec('강ㅇㅇ', '2026-10-27', '출장');
+    rec('조ㅇㅇ', '2026-10-22', '교육'); rec('윤ㅇㅇ', '2026-10-26', '건강검진');
+    rec('임ㅇㅇ', '2026-10-30', '반차', '오후'); rec('서ㅇㅇ', '2026-11-02', '휴가');
+    rec('신ㅇㅇ', '2026-11-04', '휴가'); rec('신ㅇㅇ', '2026-11-05', '휴가');
+    rec('권ㅇㅇ', '2026-10-21', '리모트');
+    get('장ㅇㅇ', '2026-10-20').unc = true; get('오ㅇㅇ', '2026-10-26').unc = true; get('황ㅇㅇ', '2026-10-29').unc = true;
+    get('안ㅇㅇ', '2026-10-22').plan = 'added'; get('류ㅇㅇ', '2026-11-05').plan = 'added';
+    get('전ㅇㅇ', '2026-10-21').plan = 'released';
+    get('김ㅇㅇ', '2026-10-30').iv = true; get('송ㅇㅇ', '2026-11-03').iv = true; get('서ㅇㅇ', '2026-11-02').iv = true;
+    return { cells, get };
+  }
+
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  function mount(root, opts) {
+        const quiet = opts.banner === 'quiet';
+    const S = seed();
+    const st = { mode: false, pop: null, last: '', tip: null };
+    root.classList.add('board');
+    root.classList.toggle('quiet', quiet);
+
+    const planOn = c => c.plan === 'rule' || c.plan === 'added';
+
+    function face(n, d) {
+      if (!isMember(n, d)) return { k: 'nm', cls: 'nm', txt: '', title: '소속 아님' };
+      if (HOL[d]) return { k: 'hol', cls: 'hol', txt: '', title: HOL[d] + ' 휴일' };
+      const c = S.get(n, d);
+      if (c.rec) {
+        const m = META[c.rec.type];
+        return { k: 'ok', cls: 't-' + m.c, txt: m.l, title: c.rec.type + (c.rec.part ? ` ${c.rec.part}` : '') };
+      }
+      if (planOn(c)) {
+        const mo = d <= TODAY ? c.morning : null;
+        if (mo === 'present') return { k: 'ok', cls: 't-work', txt: '', title: '출근(아침 확인)' };
+        if (mo === 'unconfirmed') return { k: 'ok', cls: 'unk', txt: '?', title: '미확인(아침 확인)' };
+        const added = c.plan === 'added';
+        return { k: 'ok', cls: 't-remote', txt: '리' + (added ? '<i class="pl">+</i>' : ''), title: added ? '직접 추가한 리모트' : '계획된 리모트' };
+      }
+      if (c.unc) return { k: 'ok', cls: 'unk', txt: '?', title: '미확인' };
+      return { k: 'ok', cls: 't-work', txt: '', title: '출근' };
+    }
+
+    function statusOf(n, d) {
+      const c = S.get(n, d);
+      const f = face(n, d);
+      const rec = c.rec ? `${c.rec.type}${c.rec.part ? ' ' + c.rec.part : ''}` : (c.unc ? '미확인(?)' : (planOn(c) && c.morning ? (c.morning === 'present' ? '출근(아침 확인)' : '미확인(아침 확인)') : '기록 없음(출근)'));
+      const plan = { rule: '있음(규칙)', added: '있음(직접 추가)', released: '해제됨', null: '없음' }[c.plan];
+      return { rec, plan, iv: c.iv, c, f };
+    }
+
+    function render() {
+      let h = '<colgroup><col style="width:1.75rem"><col style="width:4.75rem">' + DAYS.map(() => '<col style="width:1.5rem">').join('') + '</colgroup><thead><tr><th class="sg" aria-label="조"></th><th class="nm">이름</th>';
+      DAYS.forEach((d, i) => {
+        const x = info(d), wk = i === 0 || x.wd === 1;
+        h += `<th class="${d === TODAY ? 'today ' : ''}${HOL[d] ? 'red ' : ''}${wk ? 'wk' : ''}"><span>${x.d}</span><span class="wd">${WD[x.wd]}</span>${HOL[d] ? '<span class="hn">' + HOL[d].slice(0, 2) + '</span>' : ''}</th>`;
+      });
+      h += '</tr></thead><tbody>';
+      GROUPS.forEach(([g, ms], gi) => ms.forEach((n, mi) => {
+        h += `<tr class="${gi % 2 ? 'gb' : 'ga'}${mi === 0 ? ' gs' : ''}">`;
+        if (mi === 0) h += `<th class="strip" scope="rowgroup" rowspan="${ms.length}">${g}</th>`;
+        h += `<th class="nmc" scope="row">${n}</th>`;
+        DAYS.forEach((d, i) => {
+          const f = face(n, d), c = S.get(n, d), x = info(d), wk = i === 0 || x.wd === 1;
+          const blocked = f.k !== 'ok';
+          const hasRec = !!c.rec;
+          const tg = !st.mode && !blocked && d <= TODAY && !hasRec;
+          const cls = ['c', f.cls, st.mode ? (blocked ? 'bl' : 'ed') : (tg ? 'tg' : '')];
+          if (st.pop && st.pop.n === n && st.pop.d === d) cls.push('target');
+          const tag = blocked ? 'div' : 'button';
+          const extra = blocked ? ' role="img"' : ' type="button"';
+          const aria = `${n} ${label(d)} ${f.title}${c.iv ? ' 면담' : ''}`;
+          const inner = `<${tag} class="${cls.join(' ')}" data-n="${n}" data-d="${d}"${extra} aria-label="${aria}" title="${esc(f.title)}${st.mode && !blocked ? ' · 눌러서 수정' : tg ? ' · 눌러서 바꾸기' : ''}">${f.txt}</${tag}>`;
+          h += `<td class="${d === TODAY ? 'today ' : ''}${wk ? 'wk' : ''}"><span class="cw">${inner}${c.iv && !blocked ? '<span class="fl"></span>' : ''}</span></td>`;
+        });
+        h += '</tr>';
+      }));
+      h += '</tbody><tfoot>';
+      const sum = (name, fn) => {
+        h += `<tr><th scope="row" colspan="2">${name}</th>`;
+        DAYS.forEach((d, i) => {
+          let n = 0;
+          GROUPS.forEach(([, ms]) => ms.forEach(m => { if (isMember(m, d) && !HOL[d] && fn(face(m, d), S.get(m, d))) n++ }));
+          h += `<td class="${i === 0 || info(d).wd === 1 ? 'wk' : ''}${d === TODAY ? ' today' : ''}">${HOL[d] ? '' : n}</td>`;
+        });
+        h += '</tr>';
+      };
+      sum('리모트', f => f.cls === 't-remote');
+      sum('출근', f => f.cls === 't-work');
+      sum('부재', f => ['t-leave', 't-half', 't-trip', 't-training', 't-checkup'].includes(f.cls));
+      sum('미확인', f => f.cls === 'unk');
+      h += '</tfoot>';
+      tbl.innerHTML = h;
+    }
+
+    // ── skeleton ──
+    root.innerHTML = `
+      <div class="bhead">
+        <div><h1>근태 현황 <span style="font-weight:400;font-size:.8125rem;color:var(--muted-foreground)">관리자</span></h1><p>10/19(월) ~ 11/6(금) · 근무일만 표시 · 오늘 10/30</p></div>
+        <div class="sw-wrap"><span class="swl">수정 모드</span><button type="button" class="switch" role="switch" aria-checked="false" aria-label="수정 모드"></button><span class="pill" hidden>수정 중</span></div>
+      </div>
+      <div class="mbar" hidden><span><b>수정 모드 켜짐.</b> 칸을 누르면 수정 창이 열립니다. 출근 ↔ 미확인과 리모트 3단계 토글은 꺼져 있습니다.</span><button type="button" class="off">수정 모드 끄기</button><span class="last"></span></div>
+      <div class="quietnote" hidden></div>
+      <ul class="legend" aria-label="범례">
+        <li><span class="lg t-work" style="background:var(--att-work)"></span>출근</li>
+        <li><span class="lg" style="background:var(--att-leave);color:var(--att-leave-foreground)">휴</span>휴가</li>
+        <li><span class="lg" style="background:var(--att-half);color:var(--att-half-foreground)">반</span>반차·반반차</li>
+        <li><span class="lg" style="background:var(--att-remote);color:var(--att-remote-foreground)">리</span>리모트</li>
+        <li><span class="lg" style="background:var(--att-trip);color:var(--att-trip-foreground)">출</span>출장</li>
+        <li><span class="lg" style="background:var(--att-training);color:var(--att-training-foreground)">교</span>교육</li>
+        <li><span class="lg" style="background:var(--att-checkup);color:var(--att-checkup-foreground)">건</span>건강검진</li>
+        <li><span class="lg" style="border:1px dashed color-mix(in oklab,var(--foreground) 50%,transparent)">?</span>미확인</li>
+        <li><span class="lg" style="background:var(--muted)"></span>휴일</li>
+        <li><span class="lg" style="border:1px dotted color-mix(in oklab,var(--foreground) 30%,transparent);opacity:.5"></span>소속 아님</li>
+        <li><span class="lg" style="position:relative;background:var(--att-work)"><span class="fl"></span></span>면담</li>
+      </ul>
+      <div class="tw"><table class="at" aria-label="근태 현황표"></table></div>`;
+    const tbl = root.querySelector('table');
+    const tw = root.querySelector('.tw');
+    const sw = root.querySelector('.switch');
+    const pill = root.querySelector('.pill');
+    const mbar = root.querySelector('.mbar');
+    const qn = root.querySelector('.quietnote');
+    const lastEl = mbar.querySelector('.last');
+
+    // ── mode ──
+    function setMode(on, silent) {
+      st.mode = on;
+      if (!on) { closePop(true); clearTip() }
+      root.classList.toggle('edit', on);
+      sw.setAttribute('aria-checked', on);
+      pill.hidden = !(on && quiet);
+      mbar.hidden = !(on && !quiet);
+      qn.hidden = !(on && quiet);
+      qn.textContent = on && quiet ? '칸을 누르면 수정 창이 열립니다. 토글은 꺼져 있습니다.' : '';
+      render();
+      if (!silent) sync();
+    }
+    sw.onclick = () => setMode(!st.mode);
+    mbar.querySelector('.off').onclick = () => setMode(false);
+
+    // ── placement ──
+    function place(el, cell) {
+      const r = root.getBoundingClientRect(), c = cell.getBoundingClientRect();
+      const stageEl = root.closest('.sh-stage'), sr = stageEl.getBoundingClientRect();
+      const barH = (document.querySelector('.sh-bar') || { offsetHeight: 0 }).offsetHeight;
+      const ct = stageEl.clientTop, cl = stageEl.clientLeft;
+      const top0 = Math.max(sr.top + ct, barH) + 6, bot0 = Math.min(sr.top + ct + stageEl.clientHeight, innerHeight) - 6;
+      const left0 = Math.max(sr.left + cl, 0) + 6, right0 = Math.min(sr.left + cl + stageEl.clientWidth, innerWidth) - 6;
+      el.style.maxHeight = 'none'; el.style.width = '';
+      const maxW = right0 - left0;
+      if (el.offsetWidth > maxW) el.style.width = maxW + 'px';
+      const pw = el.offsetWidth; let ph = el.offsetHeight;
+      const below = bot0 - (c.bottom + 6), above = (c.top - 6) - top0;
+      let top;
+      if (ph <= below) top = c.bottom + 6;
+      else if (ph <= above) top = c.top - 6 - ph;
+      let left = c.left + c.width / 2 - pw / 2;
+      if (top === undefined) {
+        // neither above nor below fits: sit beside the cell, vertically centered on it
+        const mh = bot0 - top0; el.style.maxHeight = mh + 'px'; ph = Math.min(ph, mh);
+        top = Math.min(Math.max(c.top + c.height / 2 - ph / 2, top0), bot0 - ph);
+        left = c.left - 6 - pw >= left0 ? c.left - 6 - pw : c.right + 6;
+      }
+      left = Math.min(Math.max(left, left0), right0 - pw);
+      el.style.left = (left - r.left) + 'px';
+      el.style.top = (top - r.top) + 'px';
+    }
+
+    // ── popup ──
+    function typeRows(cur) {
+      const rows = ['휴가', '반차', '반반차', '리모트', '출장', '교육', '건강검진', '출근'];
+      return rows.map(t => ({ t, sub: PARTS[t], name: t === '리모트' ? '리모트 (근태 기록)' : t, cur: cur && cur.type === t }));
+    }
+    function popHtml() {
+      const { n, d, expand } = st.pop;
+      const x = statusOf(n, d), c = x.c;
+      const head = `<div class="ph"><div><h3>${n} · ${label(d)}</h3><div class="st"><span class="tag on">근태: ${esc(x.rec)}</span><span class="tag">리모트 계획: ${x.plan}</span><span class="tag ${x.iv ? 'iv' : ''}">면담: ${x.iv ? '켜짐' : '꺼짐'}</span></div></div><button type="button" class="x" aria-label="닫기">✕</button></div>`;
+      const rows = typeRows(c.rec);
+      const subs = r => r.sub ? `<div class="subs" data-for="${r.t}"><span class="subhint">구분을 고르면 저장됩니다</span>${r.sub.map(p => `<button type="button" data-type="${r.t}" data-part="${p}" class="${c.rec && c.rec.type === r.t && c.rec.part === p ? 'cur' : ''}">${p}</button>`).join('')}</div>` : '';
+      const sw1 = t => `<span class="sw1 t-${META[t].c}${t === '출근' ? '' : ''}">${META[t].l}</span>`;
+      let typesHtml;
+      {
+        typesHtml = rows.map(r => `<button type="button" class="opt li${r.cur ? ' cur' : ''}" data-type="${r.t}" ${r.sub ? 'data-open="1"' : ''}>${sw1(r.t)}${r.name}${r.sub ? `<span class="go">${expand === r.t ? '▴' : '구분 ▾'}</span>` : ''}</button>${r.sub && expand === r.t ? subs(r) : ''}`).join('')
+          + `<button type="button" class="opt li" data-clear="1" style="color:var(--destructive)" ${c.rec ? '' : 'disabled'}><span class="sw1 none">✕</span>기록 지우기${c.rec ? '' : ' (지울 기록 없음)'}</button>`;
+      }
+      const types = `<div class="sec"><h4>근태 유형</h4>${typesHtml}</div>`;
+      const planned = planOn(c);
+      const plan = `<div class="sec"><h4>리모트 계획</h4><button type="button" class="act" data-plan="${planned ? 'off' : 'on'}"><span class="ic">${planned ? '−' : '+'}</span>리모트 계획 ${planned ? '해제' : '추가'}</button><p class="hint">${c.rec ? '근태 기록이 있어 칸에는 기록이 먼저 보입니다. 계획은 따로 바뀝니다.' : planned ? '계획이 규칙에서 온 것이어도 해제할 수 있습니다.' : '규칙에 없는 날에도 추가할 수 있습니다.'}</p></div>`;
+      const iv = `<div class="sec"><h4>면담</h4><button type="button" class="act" data-iv="${x.iv ? 'off' : 'on'}"><span class="ic">⚑</span>면담 표시 ${x.iv ? '끄기' : '켜기'}</button><p class="hint">근태 기록과 집계는 바뀌지 않습니다.</p></div>`;
+      return head + types + plan + iv;
+    }
+
+    let popEl = null;
+    function cellEl(n, d) { return tbl.querySelector(`[data-n="${n}"][data-d="${d}"]`) }
+    function renderPop(reposition) {
+      if (!st.pop) return;
+      if (!popEl) { popEl = document.createElement('div'); popEl.setAttribute('role', 'dialog'); root.appendChild(popEl) }
+      popEl.className = 'pop list';
+      popEl.setAttribute('aria-label', `${st.pop.n} ${label(st.pop.d)} 수정`);
+      popEl.innerHTML = popHtml();
+      place(popEl, cellEl(st.pop.n, st.pop.d));
+      popEl.querySelector('.x').onclick = () => closePop();
+    }
+    function closePop(silent) {
+      if (popEl) { popEl.remove(); popEl = null }
+      if (st.pop) { st.pop = null; render() }
+      if (!silent) sync();
+    }
+    function openPop(n, d, expand) {
+      clearTip();
+      st.pop = { n, d, expand: expand || null };
+      render(); renderPop();
+      sync();
+    }
+
+    function commit(msg, n, d) {
+      st.last = msg;
+      lastEl.textContent = '방금 바꿈: ' + msg;
+      if (quiet) { qn.textContent = '방금 바꿈: ' + msg }
+      closePop(true); render();
+      const el = cellEl(n, d); if (el) el.classList.add('flash');
+      sync();
+    }
+    function apply(type, part) {
+      const { n, d } = st.pop, c = S.get(n, d);
+      c.rec = { type, part: part || null }; c.unc = false; c.morning = null;
+      commit(`${n} ${label(d)} → ${type}${part ? ' ' + part : ''}`, n, d);
+    }
+
+    // ── tips for blocked cells ──
+    function clearTip() { if (st.tip) { st.tip.el.remove(); clearTimeout(st.tip.t); st.tip = null } }
+    function showTip(el, text) {
+      clearTip();
+      const t = document.createElement('div'); t.className = 'tip'; t.setAttribute('role', 'status'); t.textContent = text; root.appendChild(t);
+      place(t, el);
+      st.tip = { el: t, t: setTimeout(() => { clearTip(); sync() }, 3500) };
+      sync();
+    }
+
+    // ── clicks ──
+    tbl.addEventListener('click', e => {
+      const el = e.target.closest('.c'); if (!el) return;
+      const n = el.dataset.n, d = el.dataset.d, f = face(n, d), c = S.get(n, d);
+      if (st.mode) {
+        if (f.k !== 'ok') {
+          closePop(true);
+          return showTip(cellEl(n, d), f.k === 'hol' ? `${HOL[d]} 휴일 칸은 수정할 수 없습니다.` : `${n}은(는) 이 날짜에 소속이 아니라 수정할 수 없습니다.`);
+        }
+        return openPop(n, d);
+      }
+      if (f.k !== 'ok' || d > TODAY || c.rec) return;
+      if (planOn(c)) { const cur = c.morning || 'remote'; const nx = { remote: 'present', present: 'unconfirmed', unconfirmed: 'remote' }[cur]; c.morning = nx === 'remote' ? null : nx }
+      else c.unc = !c.unc;
+      render();
+    });
+    root.addEventListener('click', e => {
+      if (!st.pop || !popEl) return;
+      const b = e.target.closest('button'); if (!b || !popEl.contains(b)) return;
+      const { n, d } = st.pop, c = S.get(n, d);
+      if (b.dataset.clear) { c.rec = null; c.unc = false; c.morning = null; return commit(`${n} ${label(d)} → 기록 지움${planOn(c) ? ' (리모트 계획이 다시 보임)' : ''}`, n, d) }
+      if (b.dataset.plan) {
+        c.plan = b.dataset.plan === 'on' ? 'added' : 'released';
+        return commit(`${n} ${label(d)} → 리모트 계획 ${b.dataset.plan === 'on' ? '추가' : '해제'}`, n, d);
+      }
+      if (b.dataset.iv) { c.iv = b.dataset.iv === 'on'; return commit(`${n} ${label(d)} → 면담 표시 ${c.iv ? '켬' : '끔'}`, n, d) }
+      if (b.dataset.part) return apply(b.dataset.type, b.dataset.part);
+      if (b.dataset.open) { st.pop.expand = st.pop.expand === b.dataset.type ? null : b.dataset.type; renderPop(); return sync() }
+      if (b.dataset.type) return apply(b.dataset.type);
+    });
+    root.addEventListener('click', e => { st.ci = !!e.target.closest('.pop, .c, .switch, .mbar') }, true);
+    document.addEventListener('click', e => {
+      if (st.ci) { st.ci = false; return }
+      if (!st.pop) return;
+      if (!root.isConnected) return;
+      closePop();
+    });
+    addEventListener('keydown', e => { if (e.key === 'Escape' && (st.pop || st.tip)) { clearTip(); closePop() } });
+    tw.addEventListener('scroll', () => { if (st.pop) place(popEl, cellEl(st.pop.n, st.pop.d)) });
+    addEventListener('resize', () => { if (st.pop && popEl) place(popEl, cellEl(st.pop.n, st.pop.d)) });
+
+    // ── presets ──
+    function preset() {
+      if (!st.mode) return 'Default';
+      if (st.tip) return '수정 불가 칸 안내';
+      if (st.pop) {
+        if (st.pop.expand) return '반차 구분 고르는 중';
+        const i = DAYS.indexOf(st.pop.d);
+        if (i === DAYS.length - 1) return '오른쪽 끝 칸 팝업';
+        if (i === 0) return '왼쪽 끝 칸 팝업';
+        return '팝업 열림';
+      }
+      return '수정 모드 켬';
+    }
+    function sync() { if (opts.onSync) opts.onSync(preset()) }
+    function applyPreset(name) {
+      clearTip();
+      if (name === 'Default') return setMode(false, true), sync();
+      if (!st.mode) setMode(true, true);
+      closePop(true);
+      const pick = (n, d, ex) => { openPop(n, d, ex); const el = cellEl(n, d); if (el) el.scrollIntoView({ block: 'nearest', inline: 'center' }); if (popEl) place(popEl, el) };
+      if (name === '팝업 열림') pick('정ㅇㅇ', '2026-10-29');
+      else if (name === '반차 구분 고르는 중') pick('박ㅇㅇ', '2026-10-30', '반차');
+      else if (name === '오른쪽 끝 칸 팝업') pick('오ㅇㅇ', '2026-11-06');
+      else if (name === '왼쪽 끝 칸 팝업') pick('이ㅇㅇ', '2026-10-19');
+      else if (name === '수정 불가 칸 안내') { const el = cellEl('김ㅇㅇ', '2026-10-28'); el.scrollIntoView({ block: 'nearest', inline: 'center' }); showTip(el, `${HOL['2026-10-28']} 휴일 칸은 수정할 수 없습니다.`) }
+      else render();
+      sync();
+    }
+    render();
+    return { setMode, applyPreset, preset };
+  }
+  return { mount };
+})();
+
+  const board = Board.mount(document.getElementById('board'), { banner: 'bar', onSync: n => { if (prototypeShell.getState() !== n) prototypeShell.setState(n) } });
+  stateSelect.addEventListener('change', () => board.applyPreset(stateSelect.value));
+</script>
