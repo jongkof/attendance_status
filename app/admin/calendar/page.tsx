@@ -4,6 +4,7 @@ import Link from "next/link";
 import { AdminNav } from "@/components/admin-nav";
 import { CalendarEditor, type CalendarRow } from "@/components/calendar-editor";
 import { PageShell } from "@/components/page-shell";
+import { YearNotice } from "@/components/year-notice";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { buttonVariants } from "@/components/ui/button";
 import { requireAdmin } from "@/lib/admin/auth";
@@ -59,6 +60,7 @@ export default async function CalendarPage({
       description="휴일은 쉬는 날로 현황표에서 근태가 가려지고, 행사는 근무일에 날짜 위로 이름만 붙습니다. 하루에 하나씩 등록합니다."
       actions={nav}
     >
+      <YearNotice year={year} />
       {rows === null ? (
         <Alert variant="destructive">
           <CircleAlertIcon />

@@ -3,3 +3,4 @@ export * from "./day-marks";
 export * from "./rules";
 export * from "./types";
 export * from "./validate";
+export * from "./year-registration";

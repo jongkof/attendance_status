@@ -4,6 +4,7 @@ import { AttendanceLegend } from "@/components/attendance-legend";
 import { AttendanceTable } from "@/components/attendance-table";
 import { MonthNav } from "@/components/month-nav";
 import { PageShell } from "@/components/page-shell";
+import { YearNotice } from "@/components/year-notice";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { requireAdmin } from "@/lib/admin/auth";
 import { parseMonth, todayInSeoul, weekdaysOfMonth } from "@/lib/attendance";
@@ -45,6 +46,7 @@ export default async function AdminPage({
   if (view === null) {
     return (
       <PageShell title={title} actions={actions}>
+        <YearNotice year={year} />
         <Alert variant="destructive">
           <CircleAlertIcon />
           <AlertTitle>근태 현황을 불러오지 못했습니다</AlertTitle>
@@ -60,6 +62,7 @@ export default async function AdminPage({
       description="아침에 실제 출근을 확인하고, 공지도 연락도 없이 자리에 없는 사람의 칸(오늘·지난 날짜의 녹색 칸)을 누르면 미확인(?)이 됩니다. 다시 누르면 출근으로 돌아옵니다. 리모트로 보이는 칸(노란 칸)은 누를 때마다 리모트 → 출근 → 미확인(?) → 리모트로 바뀌며, 근태 기록은 그대로입니다."
       actions={actions}
     >
+      <YearNotice year={year} />
       <AttendanceLegend />
       <AttendanceTable
         roster={view.roster}

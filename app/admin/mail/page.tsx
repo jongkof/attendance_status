@@ -5,6 +5,7 @@ import { AdminNav } from "@/components/admin-nav";
 import { MailDatePicker } from "@/components/mail-date-picker";
 import { MailPreview } from "@/components/mail-preview";
 import { PageShell } from "@/components/page-shell";
+import { YearNotice } from "@/components/year-notice";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { requireAdmin } from "@/lib/admin/auth";
 import { isValidDate, todayInSeoul } from "@/lib/attendance";
@@ -42,6 +43,7 @@ export default async function MailPage({ searchParams }: { searchParams: Promise
       description="그날의 현황을 메일 본문으로 만들어 미리 보고, 제목과 본문을 복사해 Outlook에 붙여 넣습니다. 고칠 내용은 근태 기록을 고쳐서 반영하세요."
       actions={<AdminNav />}
     >
+      <YearNotice year={Number(date.slice(0, 4))} />
       <MailDatePicker date={date} today={today} />
       {content === null ? (
         <Alert variant="destructive">
