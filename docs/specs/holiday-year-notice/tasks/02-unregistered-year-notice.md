@@ -44,13 +44,13 @@ verification pass. Use `superseded` only after an approved replacement of a
 task with recorded completion history. Preserve its Execution evidence and name
 the replacement and reason under Revision; it is then terminal for that approved
 breakdown and outside the current delivery map. -->
-in-progress
+completed
 
 ## Execution
 
 <!-- Append concise evidence and preserve earlier entries when status changes.
 Execution Blocker is the current impediment for an active task, not a declared
 task dependency. In a superseded task, preserved entries are historical. -->
-- Verification: 단위·컴포넌트 테스트(lib/calendar/year-registration.test.ts, components/year-notice-alert.test.tsx), lint, typecheck 통과. 실제 화면(2031년 안내, 2026년 무안내, 로그인 전 접근, 내년 안내, 등록 후 사라짐)은 아직 확인하지 못했다.
-- Blocker: 이 worktree에 `.env.local`이 없어 개발 서버가 Supabase에 연결되지 않는다. 사용자가 환경 파일을 제공하고 관리자 로그인을 해야 실제 화면 확인을 끝낼 수 있다.
+- Verification: 단위·컴포넌트 테스트, lint, typecheck 통과. 개발 서버(3020)에서 읽기만으로 확인: 2031년 달력 편집·관리자 현황표(2031-03)·메일 미리보기(2031-03-05)에 안내가 나오고, 2026·2030년 화면과 공개 현황표(2031-03)에는 없음. 규칙 휴일 3건만 있는 2031년도 미등록으로 판정. 등록 방법 보기/접기 토글과 두 방법의 단계 확인. 로그인 없는 요청은 307로 /admin/login 이동. 11월 내년 안내(오늘 10월 30일이라 화면에는 안 뜸)와 등록 후 사라짐은 DB 쓰기를 피해 단위 테스트로만 확인.
+- Blocker: —
 - Revision: —
