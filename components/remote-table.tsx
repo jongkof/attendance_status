@@ -1,6 +1,7 @@
-import { TYPE_COLOR } from "@/components/attendance-style";
+import { BODY_CELL, BODY_HEAD, groupTone, HEADER_HEAD, TYPE_COLOR } from "@/components/attendance-style";
+import { TableFrame } from "@/components/table-frame";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { weekdayLabel, type AttendanceRecord, type AttendanceType } from "@/lib/attendance";
+import { focusDayOf, weekdayLabel, type AttendanceRecord, type AttendanceType } from "@/lib/attendance";
 import type { DayMark } from "@/lib/calendar";
 import { mondayOf, type RemoteGroup } from "@/lib/remote";
 import { cn } from "@/lib/utils";
@@ -21,7 +22,7 @@ const STRIP_COLUMN_REM = 2.25;
 const NAME_COLUMN_REM = 6;
 const DAY_COLUMN_REM = 2.75;
 const WEEK_BORDER = "border-l-2 border-foreground/25";
-const SQUARE = "mx-auto flex size-6 items-center justify-center rounded-sm text-[11px] font-semibold";
+const SQUARE = "mx-auto flex size-5 items-center justify-center rounded-sm text-[11px] font-semibold";
 
 const md = (date: string) => `${Number(date.slice(5, 7))}/${Number(date.slice(8, 10))}`;
 
@@ -116,7 +117,12 @@ export function RemoteTable({
     );
   }
 
+  const focusDay = focusDayOf(days, today);
+  // 조 없는 팀원 묶음(미배정)은 조 배경 없이, 조는 두 톤을 번갈아 쓴다.
+  let groupCount = 0;
+
   return (
+    <TableFrame focusDay={focusDay}>
     <Table
       className="table-fixed"
       style={{ width: `${STRIP_COLUMN_REM + NAME_COLUMN_REM + days.length * DAY_COLUMN_REM}rem` }}
@@ -130,15 +136,18 @@ export function RemoteTable({
       </colgroup>
       <TableHeader>
         <TableRow>
-          <TableHead className="sticky left-0 z-10 bg-background" aria-label="조" />
-          <TableHead className="sticky left-9 z-10 bg-background">이름</TableHead>
+          <TableHead className={cn("sticky left-0 z-10 bg-background", HEADER_HEAD)} aria-label="조" />
+          <TableHead data-name-head="" className={cn("sticky left-9 z-10 bg-background", HEADER_HEAD)}>이름</TableHead>
           {days.map((day, index) => (
             <TableHead
               key={day}
+              data-day={day}
+              data-focus-day={day === focusDay ? "" : undefined}
               data-week-start={startsWeek(day, index) ? "" : undefined}
               aria-current={day === today ? "date" : undefined}
               className={cn(
-                "px-0.5 text-center",
+                "px-0.5 text-center leading-4",
+                HEADER_HEAD,
                 startsWeek(day, index) && WEEK_BORDER,
                 day === today && "bg-accent text-accent-foreground",
               )}
@@ -161,11 +170,11 @@ export function RemoteTable({
           ))}
         </TableRow>
         <TableRow>
-          <TableHead colSpan={2} className="sticky left-0 z-10 bg-background text-xs font-medium">
+          <TableHead colSpan={2} className="sticky left-0 z-10 h-auto bg-background py-0.5 text-xs font-medium">
             리모트 없음
           </TableHead>
           {weeks.map(({ week, count, first }) => (
-            <TableHead key={week} colSpan={count} className={cn("py-1 text-center", first > 0 && WEEK_BORDER)}>
+            <TableHead key={week} colSpan={count} className={cn("h-auto py-0.5 text-center", first > 0 && WEEK_BORDER)}>
               <label className="inline-flex items-center gap-1 text-xs font-normal">
                 {/* 휴일·행사 주는 처음부터 체크된 상태로 보이고, 풀면 자동 건너뜀보다 우선한다. */}
                 <input
@@ -182,9 +191,10 @@ export function RemoteTable({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {blocks.map(({ group, members }) =>
-          members.map((name, rowIndex) => (
-            <TableRow key={name} className={cn(rowIndex === 0 && "border-t-2 border-foreground/25")}>
+        {blocks.map(({ group, members }) => {
+          const tone = groupTone(group ? groupCount++ : null);
+          return members.map((name, rowIndex) => (
+            <TableRow key={name} className={cn(tone, rowIndex === 0 && "border-t-2 border-foreground/25")}>
               {rowIndex === 0 ? (
                 <TableHead
                   rowSpan={members.length}
@@ -196,22 +206,24 @@ export function RemoteTable({
                   ) : null}
                 </TableHead>
               ) : null}
-              <TableHead scope="row" className="sticky left-9 z-10 bg-background font-medium whitespace-nowrap">
+              <TableHead scope="row" className={cn("sticky left-9 z-10 bg-inherit font-medium whitespace-nowrap", BODY_HEAD)}>
                 {name}
               </TableHead>
               {days.map((day, index) => (
                 <TableCell
                   key={day}
+                  data-day={day}
                   data-week-start={startsWeek(day, index) ? "" : undefined}
-                  className={cn("p-0.5", startsWeek(day, index) && WEEK_BORDER, day === today && "bg-accent")}
+                  className={cn(BODY_CELL, startsWeek(day, index) && WEEK_BORDER, day === today && "bg-accent")}
                 >
                   {cell(name, group, day)}
                 </TableCell>
               ))}
             </TableRow>
-          )),
-        )}
+          ));
+        })}
       </TableBody>
     </Table>
+    </TableFrame>
   );
 }

@@ -70,3 +70,12 @@ export function weekdayLabel(date: string): string {
   const value = toUtc(date);
   return value ? WEEKDAY_LABELS[value.getUTCDay()] : "";
 }
+
+/**
+ * 표를 처음 열 때(또는 "오늘"을 눌렀을 때) 보여 줄 열. 오늘이 이 표의 달에 있을 때만 정한다.
+ * 오늘이 주말이면 가장 가까운 지난 근무일이고, 다른 달이거나 지난 근무일이 없으면 null(첫 열부터 보인다).
+ */
+export function focusDayOf(days: readonly string[], today: string): string | null {
+  if (days.length === 0 || days[0].slice(0, 7) !== today.slice(0, 7)) return null;
+  return days.filter((day) => day <= today).at(-1) ?? null;
+}
