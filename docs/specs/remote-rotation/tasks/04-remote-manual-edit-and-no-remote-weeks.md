@@ -10,13 +10,13 @@
 
 ## Acceptance criteria
 
-- [ ] 리모트 표에서 칸을 눌러 그 사람·날짜의 리모트를 지정하거나 해제한다. 한 주에 같은 사람에게 리모트를 두 번 넣을 수 있다.
-- [ ] 직접 지정한 칸에는 점 표시가 붙고, 순환이 정한 칸과 구별된다. 지정으로 늘어난 리모트는 현황표에 “리+”로 구별되어 보인다.
-- [ ] 리모트 표의 주별 “리모트 없음” 체크를 켜면 그 주의 순환 계획이 즉시 사라지고 순환을 소모하지 않아 뒤 일정이 한 주씩 밀린다. 끄면 즉시 원래대로 돌아온다. 변경은 “적용” 없이 바로 저장된다.
-- [ ] 휴일·행사가 있는 주는 체크된 채로 보이고, 관리자가 체크를 풀 수 있다. 푼 주는 자동 건너뜀보다 우선해서 리모트가 계획되고 순환을 소모한다.
-- [ ] 직접 지정한 칸과 푼 주는 02의 “적용”으로 규칙을 다시 적용해도 그대로 남는다.
-- [ ] 직접 지정, 직접 해제, 주 체크 변경은 현황표, 현황 메일, 집계에 같은 값으로 반영된다. 휴가 등 근태 기록이 있는 칸은 여전히 기록이 우선한다.
-- [ ] 로그인하지 않은 상태에서 직접 수정과 주 체크 요청을 서버에 직접 보내도 거절되어 아무것도 바뀌지 않는다.
+- [x] 리모트 표에서 칸을 눌러 그 사람·날짜의 리모트를 지정하거나 해제한다. 한 주에 같은 사람에게 리모트를 두 번 넣을 수 있다.
+- [x] 직접 지정한 칸에는 점 표시가 붙고, 순환이 정한 칸과 구별된다. 지정으로 늘어난 리모트는 현황표에 “리+”로 구별되어 보인다.
+- [x] 리모트 표의 주별 “리모트 없음” 체크를 켜면 그 주의 순환 계획이 즉시 사라지고 순환을 소모하지 않아 뒤 일정이 한 주씩 밀린다. 끄면 즉시 원래대로 돌아온다. 변경은 “적용” 없이 바로 저장된다.
+- [x] 휴일·행사가 있는 주는 체크된 채로 보이고, 관리자가 체크를 풀 수 있다. 푼 주는 자동 건너뜀보다 우선해서 리모트가 계획되고 순환을 소모한다.
+- [x] 직접 지정한 칸과 푼 주는 02의 “적용”으로 규칙을 다시 적용해도 그대로 남는다.
+- [x] 직접 지정, 직접 해제, 주 체크 변경은 현황표, 현황 메일, 집계에 같은 값으로 반영된다. 휴가 등 근태 기록이 있는 칸은 여전히 기록이 우선한다.
+- [x] 로그인하지 않은 상태에서 직접 수정과 주 체크 요청을 서버에 직접 보내도 거절되어 아무것도 바뀌지 않는다.
 
 ## Constraints
 
@@ -46,13 +46,13 @@ verification pass. Use `superseded` only after an approved replacement of a
 task with recorded completion history. Preserve its Execution evidence and name
 the replacement and reason under Revision; it is then terminal for that approved
 breakdown and outside the current delivery map. -->
-pending
+completed
 
 ## Execution
 
 <!-- Append concise evidence and preserve earlier entries when status changes.
 Execution Blocker is the current impediment for an active task, not a declared
 task dependency. In a superseded task, preserved entries are historical. -->
-- Verification: —
+- Verification: 단위·컴포넌트·거절 테스트 170개 통과(`lib/remote/plan.test.ts` 직접 수정·주 체크·재적용·기록 우선, `components/remote-manager.test.tsx` 칸 토글·점·주 체크·휴일 주 체크 상태, `app/admin/remote/actions.test.ts` 비로그인 거절), tsc는 기존 `LayoutProps` 오류만, eslint 통과. 실제 화면(next-dev-loop, 운영 DB): 홍ㅇㅇ 10/14·10/16 직접 지정으로 한 주 두 번 리모트, 점 표시, 현황표 "리+", 하단 집계와 `/admin/mail` 10/14 미리보기(리모트 2명) 반영 확인. 10/12 주 체크로 그 주 리모트 소멸·해제 시 복원, 휴일 주(10/5)가 체크된 채 보이고 풀면 양ㅇㅇ 10/6 리모트가 계획되며 다시 켜면 원래대로 돌아옴. 시험 데이터는 모두 되돌림.
 - Blocker: —
 - Revision: —

@@ -11,7 +11,15 @@ import { getRecords } from "@/lib/attendance/store";
 import { getCalendarEntries } from "@/lib/calendar/store";
 import { getRemoteSetup } from "@/lib/remote/store";
 
-import { addRemoteGroup, applyRemoteRule, assignRemoteMember, deleteRemoteGroup, renameRemoteGroup } from "./actions";
+import {
+  addRemoteGroup,
+  applyRemoteRule,
+  assignRemoteMember,
+  deleteRemoteGroup,
+  renameRemoteGroup,
+  setRemoteCell,
+  setRemoteSkipWeek,
+} from "./actions";
 
 export const metadata = { title: "리모트 관리 · 근태 현황판" };
 
@@ -60,7 +68,7 @@ export default async function RemotePage({
           <CircleAlertIcon />
           <AlertTitle>리모트 설정을 불러오지 못했습니다</AlertTitle>
           <AlertDescription>
-            {failure} 처음 쓰는 경우 Supabase SQL Editor에서 supabase/migrations/20261030000000_remote_rotation.sql을
+            {failure} 처음 쓰는 경우 Supabase SQL Editor에서 supabase/migrations/20261030000000_remote_rotation.sql과 20261030040000_remote_manual_edits.sql을
             실행했는지 확인해 주세요.
           </AlertDescription>
         </Alert>
@@ -77,6 +85,8 @@ export default async function RemotePage({
             deleteGroup: deleteRemoteGroup,
             assignMember: assignRemoteMember,
             applyRule: applyRemoteRule,
+            setCell: setRemoteCell,
+            setSkipWeek: setRemoteSkipWeek,
           }}
         />
       )}

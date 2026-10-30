@@ -2,7 +2,7 @@ import "server-only";
 
 import { calendarSets, type CalendarEntry } from "@/lib/calendar";
 import { getCalendarEntries } from "@/lib/calendar/store";
-import { orderedRoster, plannedRemoteCells, rosterBlocks, type RemoteSetup } from "@/lib/remote";
+import { orderedRoster, planRemoteCells, rosterBlocks, type RemoteSetup } from "@/lib/remote";
 import { getRemoteSetup } from "@/lib/remote/store";
 
 /**
@@ -13,11 +13,13 @@ export async function loadPlan(days: readonly string[]): Promise<{
   setup: RemoteSetup;
   entries: CalendarEntry[];
   planned: string[];
+  /** 직접 추가해서 현황표에 "리+"로 보일 칸 */
+  added: string[];
   blocks: ReturnType<typeof rosterBlocks>;
   roster: string[];
 }> {
   const [setup, entries] = await Promise.all([getRemoteSetup(), getCalendarEntries()]);
   const years = new Set([...days, ...setup.rules.map((rule) => rule.from)].map((date) => Number(date.slice(0, 4))));
-  const planned = plannedRemoteCells(setup, days, calendarSets(entries, years));
-  return { setup, entries, planned: [...planned], blocks: rosterBlocks(setup), roster: orderedRoster(setup) };
+  const { planned, added } = planRemoteCells(setup, days, calendarSets(entries, years));
+  return { setup, entries, planned: [...planned], added: [...added], blocks: rosterBlocks(setup), roster: orderedRoster(setup) };
 }

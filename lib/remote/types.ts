@@ -24,10 +24,17 @@ export type RemoteGroup = {
   members: string[];
 };
 
+/** 사람·날짜별 직접 수정. add는 규칙에 없던 리모트를 넣은 것, remove는 규칙의 리모트를 뺀 것이다. */
+export type RemoteEdit = { name: string; date: string; kind: "add" | "remove" };
+
 /** 조 편성 전체. unassigned는 어느 조에도 없는 팀원이다. */
 export type RemoteSetup = {
   groups: RemoteGroup[];
   unassigned: string[];
   /** from 오름차순 */
   rules: RemoteRule[];
+  /** 직접 수정한 칸. 없으면 없는 것으로 본다. */
+  edits?: RemoteEdit[];
+  /** 관리자가 정한 주(월요일 → 리모트 없음 여부). 있으면 휴일·행사 자동 판정보다 우선한다. */
+  skipWeeks?: Record<string, boolean>;
 };

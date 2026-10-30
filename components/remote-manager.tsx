@@ -13,8 +13,7 @@ import type { AttendanceRecord } from "@/lib/attendance";
 import { dayMarksFor, ruleHolidays, type CalendarEntry } from "@/lib/calendar";
 import {
   checkRuleShape,
-  createRemotePlanner,
-  createSkipWeekCheck,
+  createRemotePlan,
   mondayOf,
   WEEKDAY_STEPS,
   type RemoteRule,
@@ -37,6 +36,8 @@ type Props = {
     deleteGroup: (id: number) => Promise<Result>;
     assignMember: (name: string, groupId: number | null) => Promise<Result>;
     applyRule: (rule: RemoteRule) => Promise<Result>;
+    setCell: (name: string, date: string, remote: boolean) => Promise<Result>;
+    setSkipWeek: (week: string, skip: boolean) => Promise<Result>;
   };
 };
 
@@ -95,8 +96,7 @@ export function RemoteManager({ setup, entries, records, days, today, actions }:
         holidays.add(rule.date);
       }
     }
-    const isSkipWeek = createSkipWeekCheck(marked);
-    return { isSkipWeek, ...createRemotePlanner(previewRules, isSkipWeek, holidays) };
+    return createRemotePlan({ ...setup, rules: previewRules }, { marked, holidays });
   })();
   const dayMarks = dayMarksFor(days, entries);
 
@@ -237,7 +237,8 @@ export function RemoteManager({ setup, entries, records, days, today, actions }:
         <CardHeader>
           <CardTitle>리모트 표</CardTitle>
           <CardDescription>
-            노란 칸은 리모트입니다. 휴일이나 행사가 있는 주는 처음부터 “리모트 없음”이며 순환도 소모하지 않습니다.
+            노란 칸은 리모트이고, 칸을 누르면 그 사람·날짜의 리모트를 넣거나 뺍니다(점은 직접 고친 칸). 주별 “리모트 없음”을 체크하면 그 주는 순환을 소모하지 않고
+            건너뜁니다. 휴일이나 행사가 있는 주는 처음부터 체크되어 있으며, 풀면 리모트가 다시 계획됩니다. 이 변경은 “적용” 없이 바로 저장됩니다.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
@@ -265,6 +266,10 @@ export function RemoteManager({ setup, entries, records, days, today, actions }:
               records={records}
               isSkipWeek={plan.isSkipWeek}
               isPlanned={plan.isPlanned}
+              isEdited={plan.isEdited}
+              disabled={pending}
+              onToggleCell={(name, date, remote) => run(() => actions.setCell(name, date, remote))}
+              onToggleWeek={(week, skip) => run(() => actions.setSkipWeek(week, skip))}
             />
           </div>
         </CardContent>

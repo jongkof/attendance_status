@@ -280,4 +280,19 @@ describe("조 편성과 계획된 리모트", () => {
     );
     expect(counts).toEqual({ 리모트: 1, 출근: 1, 부재: 0, "오전 반차": 0, 미확인: 0 });
   });
+
+  test("직접 추가한 리모트 칸은 \"리+\"로 구별해 보인다", () => {
+    render(
+      <AttendanceTable
+        roster={["홍ㅇㅇ"]}
+        days={["2026-10-27", "2026-10-28"]}
+        records={[]}
+        planned={["홍ㅇㅇ|2026-10-27", "홍ㅇㅇ|2026-10-28"]}
+        added={["홍ㅇㅇ|2026-10-28"]}
+        today="2026-10-29"
+      />,
+    );
+    expect(screen.getByRole("img", { name: "홍ㅇㅇ 2026-10-27 리모트(계획)" })).toHaveTextContent(/^리$/);
+    expect(screen.getByRole("img", { name: "홍ㅇㅇ 2026-10-28 리모트(직접 추가)" })).toHaveTextContent("리+");
+  });
 });

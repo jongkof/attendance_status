@@ -26,8 +26,10 @@ const SQUARE = "mx-auto flex size-6 items-center justify-center rounded-sm text-
 const md = (date: string) => `${Number(date.slice(5, 7))}/${Number(date.slice(8, 10))}`;
 
 /**
- * 리모트 표(읽기 전용). 행은 팀원(미배정, 조 순서), 열은 그 달의 근무일이다.
- * 노란 칸은 리모트, 흰 칸은 리모트 아님이고, 휴일·리모트 없는 주·다른 근태 기록이 있는 칸은 눌리지 않는 회색 또는 그 근태의 색이다.
+ * 리모트 표. 행은 팀원(미배정, 조 순서), 열은 그 달의 근무일이다.
+ * 노란 칸은 리모트, 흰 칸은 리모트 아님이고 눌러서 바꾼다. 직접 고친 칸에는 점이 붙는다.
+ * 휴일·리모트 없는 주·다른 근태 기록이 있는 칸은 눌리지 않는 회색 또는 그 근태의 색이다.
+ * 날짜 머리글 아래 주별 체크는 그 주를 리모트 없는 주로 만든다.
  */
 export function RemoteTable({
   groups,
@@ -38,6 +40,10 @@ export function RemoteTable({
   records,
   isSkipWeek,
   isPlanned,
+  isEdited,
+  disabled = false,
+  onToggleCell,
+  onToggleWeek,
 }: {
   groups: readonly RemoteGroup[];
   unassigned: readonly string[];
@@ -46,7 +52,13 @@ export function RemoteTable({
   dayMarks: Record<string, DayMark>;
   records: readonly AttendanceRecord[];
   isSkipWeek: (week: string) => boolean;
-  isPlanned: (groupId: number, date: string) => boolean;
+  isPlanned: (groupId: number | null, name: string, date: string) => boolean;
+  /** 직접 고친 칸인지(점 표시) */
+  isEdited: (name: string, date: string) => boolean;
+  /** 저장 중에는 누를 수 없다 */
+  disabled?: boolean;
+  onToggleCell: (name: string, date: string, remote: boolean) => void;
+  onToggleWeek: (week: string, skip: boolean) => void;
 }) {
   const byCell = new Map(records.map((record) => [`${record.name}|${record.date}`, record]));
   const startsWeek = (day: string, index: number) => index > 0 && weekdayLabel(day) === "월";
@@ -83,13 +95,24 @@ export function RemoteTable({
     if (isSkipWeek(mondayOf(day))) {
       return <div role="img" aria-label={`${label} 리모트 없는 주`} title="리모트 없는 주" className={cn(SQUARE, "bg-muted")} />;
     }
-    const planned = group !== null && isPlanned(group.id, day);
+    const planned = isPlanned(group?.id ?? null, name, day);
+    const edited = isEdited(name, day);
     return (
-      <div
-        role="img"
-        aria-label={`${label} ${planned ? "리모트" : "리모트 아님"}`}
-        className={cn(SQUARE, planned ? "bg-att-remote" : "border border-input bg-background")}
-      />
+      <button
+        type="button"
+        disabled={disabled}
+        aria-pressed={planned}
+        aria-label={`${label} ${planned ? "리모트" : "리모트 아님"}${edited ? " (직접 수정)" : ""}`}
+        title={planned ? "누르면 리모트 해제" : "누르면 리모트 지정"}
+        onClick={() => onToggleCell(name, day, !planned)}
+        className={cn(
+          SQUARE,
+          "relative cursor-pointer hover:ring-2 hover:ring-foreground/50 disabled:cursor-wait",
+          planned ? "bg-att-remote" : "border border-input bg-background",
+        )}
+      >
+        {edited ? <span aria-hidden className="absolute top-0.5 right-0.5 size-1.5 rounded-full bg-foreground" /> : null}
+      </button>
     );
   }
 
@@ -144,8 +167,14 @@ export function RemoteTable({
           {weeks.map(({ week, count, first }) => (
             <TableHead key={week} colSpan={count} className={cn("py-1 text-center", first > 0 && WEEK_BORDER)}>
               <label className="inline-flex items-center gap-1 text-xs font-normal">
-                {/* 휴일·행사 주는 처음부터 체크된 상태로 보인다. 풀기는 이 작업 범위가 아니다. */}
-                <input type="checkbox" checked={isSkipWeek(week)} disabled readOnly aria-label={`${md(week)} 주 리모트 없음`} />
+                {/* 휴일·행사 주는 처음부터 체크된 상태로 보이고, 풀면 자동 건너뜀보다 우선한다. */}
+                <input
+                  type="checkbox"
+                  checked={isSkipWeek(week)}
+                  disabled={disabled}
+                  onChange={(event) => onToggleWeek(week, event.target.checked)}
+                  aria-label={`${md(week)} 주 리모트 없음`}
+                />
                 {count > 1 ? `${md(week)} 주` : null}
               </label>
             </TableHead>
