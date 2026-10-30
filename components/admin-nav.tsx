@@ -31,6 +31,9 @@ export function AdminNav() {
       <Link href="/admin/password" className={buttonVariants({ variant: "ghost", size: "sm" })}>
         비밀번호 변경
       </Link>
+      <Link href="/admin/guide" className={buttonVariants({ variant: "ghost", size: "sm" })}>
+        사용 안내
+      </Link>
       <form action={logout}>
         <Button type="submit" variant="outline" size="sm">
           로그아웃
