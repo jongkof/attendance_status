@@ -57,6 +57,33 @@ describe("월간 현황표 표시", () => {
   });
 });
 
+describe("재직 기간과 소속 아님 칸", () => {
+  const tenures = { 홍ㅇㅇ: { start: "2026-10-15", removedOn: null }, 양ㅇㅇ: { start: null, removedOn: "2026-10-30" } };
+
+  test("재직 기간 밖 칸은 근태 없음(출근)과 구별되는 흐린 소속 아님 칸이고 눌러서 바꿀 수 없다", () => {
+    const toggle = vi.fn(async () => ({ ok: true as const, marked: true }));
+    render(<AttendanceTable roster={roster} days={days} records={records} today="2026-10-29" tenures={tenures} toggle={toggle} />);
+    const before = screen.getByRole("img", { name: "홍ㅇㅇ 2026-10-14 소속 아님" });
+    expect(before.className).toContain("opacity-40");
+    expect(before.className).not.toContain("bg-att-work");
+    expect(screen.getByRole("img", { name: "양ㅇㅇ 2026-10-30 소속 아님" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /홍ㅇㅇ 2026-10-14/ })).toBeNull();
+    expect(screen.getByRole("button", { name: /홍ㅇㅇ 2026-10-15 출근/ })).toBeEnabled();
+  });
+
+  test("집계는 그날 재직 중인 팀원만 세어 합이 재직 인원과 같다", () => {
+    const { container } = render(
+      <AttendanceTable roster={roster} days={days} records={[]} today="2026-10-29" tenures={tenures} showSummary />,
+    );
+    const column = days.indexOf("2026-10-14") + 1;
+    const total = (day: number) =>
+      [...container.querySelectorAll("tfoot tr")].reduce((sum, row) => sum + Number(row.children[day]?.textContent || 0), 0);
+    expect(total(column)).toBe(1);
+    expect(total(days.indexOf("2026-10-15") + 1)).toBe(2);
+    expect(total(days.indexOf("2026-10-30") + 1)).toBe(1);
+  });
+});
+
 describe("관리자 표의 미확인 토글", () => {
   const toggle = vi.fn(async () => ({ ok: true as const, marked: true }));
 

@@ -5,7 +5,8 @@ import { revalidatePath } from "next/cache";
 import { isAdmin } from "@/lib/admin/auth";
 import { calendarSets } from "@/lib/calendar";
 import { getCalendarEntries } from "@/lib/calendar/store";
-import { checkRuleInput, checkRuleShape, decideCellEdit, decideWeekOverride, mondayOf, type RemoteRule } from "@/lib/remote";
+import { todayInSeoul } from "@/lib/attendance";
+import { checkRuleInput, checkRuleShape, decideCellEdit, decideWeekOverride, mondayOf, withoutMembers, type RemoteRule } from "@/lib/remote";
 import {
   addGroup,
   applyRule,
@@ -17,6 +18,8 @@ import {
   setWeekOverride,
   type WriteResult,
 } from "@/lib/remote/store";
+import { ALWAYS, isActiveOn, isCurrent, tenureOf } from "@/lib/roster";
+import { getMembers } from "@/lib/roster/store";
 
 const LOGIN_REQUIRED = "로그인이 필요합니다. 관리자 로그인 후 다시 시도해 주세요.";
 
@@ -63,8 +66,11 @@ export async function applyRemoteRule(input: RemoteRule): Promise<WriteResult> {
   const checkedInput = checkRuleInput(input);
   if (!checkedInput.ok) return checkedInput;
   return write(async () => {
-    const setup = await getRemoteSetup();
-    const filled = setup.groups.filter((group) => group.members.length > 0);
+    const [setup, members] = await Promise.all([getRemoteSetup(), getMembers()]);
+    // 제거된 팀원만 남은 조는 세지 않는다.
+    const tenures = tenureOf(members);
+    const current = withoutMembers(setup, (name) => isCurrent(tenures[name] ?? ALWAYS, todayInSeoul()));
+    const filled = current.groups.filter((group) => group.members.length > 0);
     const shape = checkRuleShape(input.order.length, filled.length);
     if (!shape.ok) return shape;
     // 팀원이 있는 조는 시작 위치가 반드시 있어야 하므로 빠진 조는 순서대로 채운다.
@@ -89,7 +95,9 @@ export async function setRemoteCell(name: string, date: string, remote: boolean)
     return { ok: false, error: "요청이 올바르지 않습니다." };
   }
   return write(async () => {
-    const [setup, calendar] = await Promise.all([getRemoteSetup(), calendarAround(date)]);
+    const [setup, calendar, members] = await Promise.all([getRemoteSetup(), calendarAround(date), getMembers()]);
+    const member = members.find((candidate) => candidate.name === name);
+    if (member && !isActiveOn(member, date)) return { ok: false, error: "재직 기간이 아닌 날짜에는 리모트를 지정할 수 없습니다." };
     const decision = decideCellEdit(setup, calendar, name, date, remote);
     if (!decision.ok) return decision;
     return setCellEdit(name, date, decision.kind);

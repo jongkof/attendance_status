@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 
-import { orderedRoster, planRemoteCells, plannedRemoteCells, rosterBlocks } from "./plan";
+import { orderedRoster, planRemoteCells, plannedRemoteCells, rosterBlocks, withoutMembers } from "./plan";
 import type { RemoteSetup } from "./types";
 
 const setup: RemoteSetup = {
@@ -52,6 +52,21 @@ describe("계획된 리모트 칸", () => {
 
   test("규칙이 없으면 아무 칸도 채우지 않는다", () => {
     expect(plannedRemoteCells({ ...setup, rules: [] }, days, none).size).toBe(0);
+  });
+});
+
+describe("재직 기간", () => {
+  test("재직 중이 아닌 날에는 리모트를 계획하지 않는다(제거일 당일부터 빠진다)", () => {
+    const isMemberOn = (name: string, date: string) => !(name === "홍ㅇㅇ" && date >= "2026-10-20");
+    expect([...plannedRemoteCells(setup, days, none, isMemberOn)].sort()).toEqual(
+      ["양ㅇㅇ|2026-10-12", "홍ㅇㅇ|2026-10-12", "이ㅇㅇ|2026-10-13", "양ㅇㅇ|2026-10-20", "이ㅇㅇ|2026-10-21"].sort(),
+    );
+  });
+
+  test("제거한 팀원만 남은 조는 조 수에서 빠지고 조 배정은 지워지지 않는다", () => {
+    const current = withoutMembers(setup, (name) => name !== "이ㅇㅇ");
+    expect(current.groups.filter((group) => group.members.length > 0).map((group) => group.name)).toEqual(["1조"]);
+    expect(setup.groups[1].members).toEqual(["이ㅇㅇ"]);
   });
 });
 

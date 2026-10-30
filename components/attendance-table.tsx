@@ -4,6 +4,7 @@ import {
   HOLIDAY_BOX,
   TYPE_COLOR,
   TYPE_LETTER,
+  NOT_MEMBER_BOX,
   UNCONFIRMED_BOX,
 } from "@/components/attendance-style";
 import {
@@ -29,6 +30,7 @@ import {
 } from "@/lib/attendance";
 import type { DayMark } from "@/lib/calendar";
 import type { RosterBlock } from "@/lib/remote";
+import { ALWAYS, isActiveOn, type Tenure } from "@/lib/roster";
 import { cn } from "@/lib/utils";
 
 type ToggleResult =
@@ -62,6 +64,7 @@ export function AttendanceTable({
   blocks,
   planned = [],
   added = [],
+  tenures = {},
   showSummary = false,
   today,
   toggle,
@@ -81,6 +84,8 @@ export function AttendanceTable({
   planned?: readonly string[];
   /** 그중 리모트 표에서 직접 추가한 칸("이름|날짜"). "리+"로 구별해 보인다. */
   added?: readonly string[];
+  /** 팀원별 재직 기간. 재직 기간이 아닌 날짜의 칸은 흐린 "소속 아님" 칸이 되고 집계에서 빠진다. 없는 팀원은 처음부터 재직 중이다. */
+  tenures?: Readonly<Record<string, Tenure>>;
   /** 날짜별 집계 행을 아래에 붙인다(관리자용). */
   showSummary?: boolean;
   today: string;
@@ -109,6 +114,7 @@ export function AttendanceTable({
           : []),
       ]
     : [{ name: null, members: [...roster] }];
+  const isMemberOn = (name: string, day: string) => isActiveOn(tenures[name] ?? ALWAYS, day);
   const nameLeft = hasStrip ? "left-9" : "left-0";
   const startsWeek = (day: string, index: number) =>
     index > 0 && weekdayLabel(day) === "월";
@@ -116,10 +122,12 @@ export function AttendanceTable({
   // 집계는 휴일이 아닌 날만 낸다(attendance-summary 결정).
   const summaries: Record<string, DaySummary | null> = {};
   if (showSummary) {
-    const everyone = shown.flatMap((block) => block.members);
+    const rostered = shown.flatMap((block) => block.members);
     const applied = applyMorningConfirmations({ records, unconfirmed, planned, confirmations });
     const appliedPlanned = new Set(applied.planned);
     for (const day of days) {
+      // 집계 인원은 그날 재직 중인 팀원만 센다.
+      const everyone = rostered.filter((name) => isMemberOn(name, day));
       summaries[day] = dayMarks[day]?.holiday
         ? null
         : summarizeDay(
@@ -253,7 +261,14 @@ export function AttendanceTable({
                       day === today && "bg-accent",
                     )}
                   >
-                    {dayMarks[day]?.holiday ? (
+                    {!isMemberOn(name, day) ? (
+                      <div
+                        role="img"
+                        aria-label={`${name} ${day} 소속 아님`}
+                        title="소속 아님"
+                        className={cn(CELL_BOX, NOT_MEMBER_BOX)}
+                      />
+                    ) : dayMarks[day]?.holiday ? (
                       <div
                         role="img"
                         aria-label={`${name} ${day} ${dayMarks[day].holiday} 휴일`}

@@ -45,5 +45,8 @@ export const TOGGLE_HINT = "cursor-pointer hover:ring-2 hover:ring-foreground/50
 export const UNCONFIRMED_BOX =
   "border border-dashed border-foreground/50 bg-background text-[13px] leading-[1.35rem] font-bold text-muted-foreground";
 
+/** 재직 기간이 아닌 칸("소속 아님"): 근태 없음(녹색)과 달리 칸 모양만 흐리게 남긴다. */
+export const NOT_MEMBER_BOX = "border border-dotted border-foreground/20 bg-transparent opacity-40";
+
 /** 휴일 칸: 근태를 보여 주지 않는 중립 음영. */
 export const HOLIDAY_BOX = "bg-muted";

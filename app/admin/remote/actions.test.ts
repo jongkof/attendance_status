@@ -15,6 +15,8 @@ vi.mock("@/lib/remote/store", () => ({
   renameGroup: vi.fn(),
 }));
 
+vi.mock("@/lib/roster/store", () => ({ getMembers: vi.fn(async () => []) }));
+
 import { setRemoteCell, setRemoteSkipWeek } from "./actions";
 
 describe("로그인하지 않은 요청", () => {

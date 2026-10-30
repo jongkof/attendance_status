@@ -3,9 +3,11 @@ import "server-only";
 import { loadPlan } from "@/app/load-plan";
 
 import { applyMorningConfirmations } from "@/lib/attendance";
-import { getConfirmations, getRecords, getRoster, getUnconfirmed } from "@/lib/attendance/store";
+import { getConfirmations, getRecords, getUnconfirmed } from "@/lib/attendance/store";
 import { dayMarksFor } from "@/lib/calendar";
 import type { MailInput } from "@/lib/mail";
+import { activeNamesOn } from "@/lib/roster";
+import { getMembers } from "@/lib/roster/store";
 
 /** 복귀일을 계산하려면 그 날 이후의 일정이 필요하다. 이만큼 앞의 날짜까지 읽는다. */
 const LOOKAHEAD_DAYS = 180;
@@ -20,8 +22,8 @@ function addDays(date: string, days: number): string {
  */
 export async function loadMailInput(date: string, origin: string): Promise<MailInput> {
   const to = addDays(date, LOOKAHEAD_DAYS);
-  const [roster, rawRecords, rawUnconfirmed, confirmations, plan] = await Promise.all([
-    getRoster(),
+  const [members, rawRecords, rawUnconfirmed, confirmations, plan] = await Promise.all([
+    getMembers(),
     getRecords({ from: date, to }),
     getUnconfirmed({ from: date, to: date }),
     getConfirmations({ from: date, to: date }),
@@ -40,7 +42,8 @@ export async function loadMailInput(date: string, origin: string): Promise<MailI
 
   return {
     date,
-    roster,
+    // 그 날 재직 중인 팀원만 센다.
+    roster: activeNamesOn(members, date),
     records: records.map(({ name, date: recordDate, type, period, time }) => ({ name, date: recordDate, type, period, time })),
     unconfirmedNames: unconfirmed.map((mark) => mark.name),
     plannedNames: planned.filter((cell) => cell.endsWith(`|${date}`)).map((cell) => cell.slice(0, -date.length - 1)),

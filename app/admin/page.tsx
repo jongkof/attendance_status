@@ -74,6 +74,7 @@ export default async function AdminPage({
         blocks={view.blocks}
         planned={view.planned}
         added={view.added}
+        tenures={view.tenures}
         today={today}
         showSummary
         toggle={toggleUnconfirmed}
