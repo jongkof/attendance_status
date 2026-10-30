@@ -104,7 +104,7 @@ export async function setRemoteCell(name: string, date: string, remote: boolean)
     if (member && !isActiveOn(member, date)) return { ok: false, error: "재직 기간이 아닌 날짜에는 리모트를 지정할 수 없습니다." };
     const decision = decideCellEdit(setup, calendar, name, date, remote);
     if (!decision.ok) return decision;
-    return setCellEdit(name, date, decision.kind);
+    return setCellEdit(name, date, decision.kind, member?.id);
   });
 }
 

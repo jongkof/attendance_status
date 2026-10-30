@@ -70,3 +70,22 @@ describe("면담 표", () => {
     expect(screen.queryByRole("textbox")).toBeNull();
   });
 });
+
+describe("면담 표 연속 누르기", () => {
+  test("저장이 끝나기 전에도 다른 칸을 누를 수 있다", async () => {
+    let finish!: () => void;
+    const setCell = vi
+      .fn<(name: string, date: string, on: boolean) => Promise<Result>>()
+      .mockImplementationOnce(() => new Promise((done) => (finish = () => done({ ok: true }))))
+      .mockResolvedValue({ ok: true });
+    renderManager(setCell);
+
+    fireEvent.click(screen.getByRole("button", { name: "곽ㅇㅇ 10/1 면담 없음" }));
+    const next = screen.getByRole("button", { name: "곽ㅇㅇ 10/2 면담 없음" });
+    expect(next).toBeEnabled();
+    fireEvent.click(next);
+    await waitFor(() => expect(setCell).toHaveBeenCalledWith("곽ㅇㅇ", "2026-10-02", true));
+    expect(screen.getByRole("button", { name: "곽ㅇㅇ 10/1 면담" })).toHaveAttribute("aria-pressed", "true");
+    finish();
+  });
+});

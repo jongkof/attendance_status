@@ -104,13 +104,22 @@ export async function applyRule(rule: RemoteRule): Promise<WriteResult> {
 
 /**
  * 칸의 직접 수정을 정한다. kind가 null이면 직접 수정을 지워 규칙대로 돌아간다.
+ * 호출한 쪽이 팀원 번호를 이미 알면 넘겨서 조회 한 번을 줄인다.
  */
-export async function setCellEdit(name: string, date: string, kind: "add" | "remove" | null): Promise<WriteResult> {
+export async function setCellEdit(
+  name: string,
+  date: string,
+  kind: "add" | "remove" | null,
+  knownMemberId?: number,
+): Promise<WriteResult> {
   const client = supabaseAdmin();
-  const member = await client.from("members").select("id").eq("name", name).overrideTypes<{ id: number }[]>();
-  if (member.error) return { ok: false, error: `팀원을 찾지 못했습니다: ${member.error.message}` };
-  if (member.data.length === 0) return { ok: false, error: "팀원 명단에 없는 이름입니다." };
-  const memberId = member.data[0].id;
+  let memberId = knownMemberId;
+  if (memberId === undefined) {
+    const member = await client.from("members").select("id").eq("name", name).overrideTypes<{ id: number }[]>();
+    if (member.error) return { ok: false, error: `팀원을 찾지 못했습니다: ${member.error.message}` };
+    if (member.data.length === 0) return { ok: false, error: "팀원 명단에 없는 이름입니다." };
+    memberId = member.data[0].id;
+  }
   const result =
     kind === null
       ? await client.from("remote_cell_edits").delete().eq("member_id", memberId).eq("work_date", date)

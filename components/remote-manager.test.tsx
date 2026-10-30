@@ -32,7 +32,7 @@ function setup(overrides: Partial<RemoteSetup> = {}): RemoteSetup {
 }
 
 function makeActions() {
-  const ok = async () => ({ ok: true as const });
+  const ok = async (): Promise<{ ok: true } | { ok: false; error: string }> => ({ ok: true });
   return {
     addGroup: vi.fn(ok),
     renameGroup: vi.fn(ok),
@@ -221,5 +221,38 @@ describe("규칙 적용 흐름", () => {
     renderManager({ rules: [] });
     expect(screen.getByText(/아직 적용된 규칙이 없습니다/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "적용…" })).toBeEnabled();
+  });
+});
+
+describe("칸 누르기 반응", () => {
+  const deferred = () => {
+    let resolve!: (value: { ok: true } | { ok: false; error: string }) => void;
+    const promise = new Promise<{ ok: true } | { ok: false; error: string }>((done) => (resolve = done));
+    return { promise, resolve };
+  };
+
+  test("서버 응답 전에 칸이 바뀌고, 저장 중에도 다른 칸을 이어서 누를 수 있다", async () => {
+    const first = deferred();
+    const actions = makeActions();
+    actions.setCell.mockImplementationOnce(() => first.promise);
+    renderManager({}, actions);
+
+    fireEvent.click(cell("양ㅇㅇ 10/15 리모트 아님"));
+    await waitFor(() => expect(cell("양ㅇㅇ 10/15 리모트")).toBeInTheDocument());
+    expect(cell("양ㅇㅇ 10/13 리모트")).toBeEnabled();
+    fireEvent.click(cell("양ㅇㅇ 10/13 리모트"));
+    await waitFor(() => expect(actions.setCell).toHaveBeenCalledWith("양ㅇㅇ", "2026-10-13", false));
+    expect(cell("양ㅇㅇ 10/13 리모트 아님")).toBeInTheDocument();
+    first.resolve({ ok: true });
+  });
+
+  test("저장이 거절되면 이유가 나오고 칸이 원래대로 돌아온다", async () => {
+    const actions = makeActions();
+    actions.setCell.mockResolvedValueOnce({ ok: false, error: "로그인이 필요합니다." });
+    renderManager({}, actions);
+
+    fireEvent.click(cell("양ㅇㅇ 10/15 리모트 아님"));
+    expect(await screen.findByText("로그인이 필요합니다.")).toBeInTheDocument();
+    await waitFor(() => expect(cell("양ㅇㅇ 10/15 리모트 아님")).toHaveAttribute("aria-pressed", "false"));
   });
 });

@@ -1,7 +1,7 @@
 "use client";
 
 import { CircleAlertIcon } from "lucide-react";
-import { useState, useTransition } from "react";
+import { useOptimistic, useState, useTransition } from "react";
 
 import { RemoteGroupsEditor } from "@/components/remote-groups-editor";
 import { RemoteRuleEditor, type RuleDraft } from "@/components/remote-rule-editor";
@@ -58,6 +58,12 @@ export function RemoteManager({ setup, entries, records, days, today, actions }:
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  // 칸은 따로 둔 전환으로 저장해, 저장 중에도 다른 칸을 이어서 누를 수 있다.
+  const [, startCellTransition] = useTransition();
+  const [shownCells, applyCellChange] = useOptimistic(
+    new Map<string, boolean>(),
+    (current, change: { key: string; remote: boolean }) => new Map(current).set(change.key, change.remote),
+  );
 
   const filledGroups = groups.filter((group) => group.members.length > 0);
   const stepCount = draft.order.length;
@@ -109,6 +115,15 @@ export function RemoteManager({ setup, entries, records, days, today, actions }:
       } else {
         setError(result.error);
       }
+    });
+  }
+
+  function toggleCell(name: string, date: string, remote: boolean) {
+    setError(null);
+    startCellTransition(async () => {
+      applyCellChange({ key: `${name}|${date}`, remote });
+      const result = await actions.setCell(name, date, remote);
+      if (!result.ok) setError(result.error);
     });
   }
 
@@ -265,10 +280,10 @@ export function RemoteManager({ setup, entries, records, days, today, actions }:
               dayMarks={dayMarks}
               records={records}
               isSkipWeek={plan.isSkipWeek}
-              isPlanned={plan.isPlanned}
+              isPlanned={(groupId, name, date) => shownCells.get(`${name}|${date}`) ?? plan.isPlanned(groupId, name, date)}
               isEdited={plan.isEdited}
               disabled={pending}
-              onToggleCell={(name, date, remote) => run(() => actions.setCell(name, date, remote))}
+              onToggleCell={toggleCell}
               onToggleWeek={(week, skip) => run(() => actions.setSkipWeek(week, skip))}
             />
           </div>
