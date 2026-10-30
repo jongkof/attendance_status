@@ -59,6 +59,7 @@ export default async function Home({
         blocks={view.blocks}
         planned={view.planned}
         added={view.added}
+        tenures={view.tenures}
         today={today}
       />
     </PageShell>

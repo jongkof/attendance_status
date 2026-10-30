@@ -19,17 +19,6 @@ type RecordRow = {
   members: { name: string } | null;
 };
 
-/** 표시 순서대로 정렬된 팀원 명단. */
-export async function getRoster(): Promise<string[]> {
-  const { data, error } = await supabase()
-    .from("members")
-    .select("id, name")
-    .order("sort_order")
-    .overrideTypes<MemberRow[]>();
-  if (error) throw new Error(`명단을 읽지 못했습니다: ${error.message}`);
-  return data.map((member) => member.name);
-}
-
 function toRecord(row: RecordRow): AttendanceRecord {
   return {
     name: row.members?.name ?? "",
@@ -114,15 +103,14 @@ export async function getConfirmations(range?: { from: string; to: string }): Pr
   return data.map((row) => ({ name: row.members?.name ?? "", date: row.work_date, result: row.result }));
 }
 
-/** 현황표 한 장(명단, 근태 기록, 미확인 표시, 아침 확인 결과)을 그리는 데 필요한 값. */
+/** 현황표 한 장(근태 기록, 미확인 표시, 아침 확인 결과)을 그리는 데 필요한 값. */
 export async function getMonthView(range: { from: string; to: string }) {
-  const [roster, records, unconfirmed, confirmations] = await Promise.all([
-    getRoster(),
+  const [records, unconfirmed, confirmations] = await Promise.all([
     getRecords(range),
     getUnconfirmed(range),
     getConfirmations(range),
   ]);
-  return { roster, records, unconfirmed, confirmations };
+  return { records, unconfirmed, confirmations };
 }
 
 /** 한 칸의 아침 확인 결과를 저장한다. result가 null이면 확인 결과를 지워 리모트로 되돌린다. 근태 기록은 건드리지 않는다. */

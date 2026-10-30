@@ -18,6 +18,15 @@ export function orderedRoster(setup: RemoteSetup): string[] {
   return rosterBlocks(setup).flatMap((block) => block.members);
 }
 
+/** 팀원 이름 목록에서 keep이 거짓인 이름을 뺀 조 편성. 조 배정과 규칙은 그대로다. */
+export function withoutMembers(setup: RemoteSetup, keep: (name: string) => boolean): RemoteSetup {
+  return {
+    ...setup,
+    groups: setup.groups.map((group) => ({ ...group, members: group.members.filter(keep) })),
+    unassigned: setup.unassigned.filter(keep),
+  };
+}
+
 /** marked는 휴일·행사가 있는 날짜, holidays는 휴일인 날짜다. */
 type CalendarSets = { marked: ReadonlySet<string>; holidays: ReadonlySet<string> };
 
@@ -50,9 +59,15 @@ export function createRemotePlan(setup: RemoteSetup, calendar: CalendarSets) {
 
 /**
  * 날짜들 사이의 리모트 계획. planned는 계획된 리모트인 칸("이름|날짜", 직접 수정 포함),
- * added는 그중 직접 추가해서 현황표에 "리+"로 보일 칸이다. 규칙도 직접 수정도 없으면 둘 다 비어 있다.
+ * 재직 중이 아닌 날(isMemberOn이 거짓)에는 계획하지 않는다. added는 그중 직접 추가해서 현황표에 "리+"로 보일 칸이다. 규칙도 직접 수정도 없으면 둘 다 비어 있다.
  */
-export function planRemoteCells(setup: RemoteSetup, days: readonly string[], calendar: CalendarSets) {
+export function planRemoteCells(
+  setup: RemoteSetup,
+  days: readonly string[],
+  calendar: CalendarSets,
+  /** 그 날 그 팀원이 재직 중인지. 주면 재직 중인 날에만 계획한다. */
+  isMemberOn: (name: string, date: string) => boolean = () => true,
+) {
   const plan = createRemotePlan(setup, calendar);
   const planned = new Set<string>();
   const added = new Set<string>();
@@ -62,7 +77,7 @@ export function planRemoteCells(setup: RemoteSetup, days: readonly string[], cal
   ];
   for (const { groupId, name } of people) {
     for (const day of days) {
-      if (!plan.isPlanned(groupId, name, day)) continue;
+      if (!isMemberOn(name, day) || !plan.isPlanned(groupId, name, day)) continue;
       planned.add(`${name}|${day}`);
       if (plan.isAdded(groupId, name, day)) added.add(`${name}|${day}`);
     }
@@ -71,8 +86,13 @@ export function planRemoteCells(setup: RemoteSetup, days: readonly string[], cal
 }
 
 /** 계획된 리모트인 칸만("이름|날짜"). */
-export function plannedRemoteCells(setup: RemoteSetup, days: readonly string[], calendar: CalendarSets): Set<string> {
-  return planRemoteCells(setup, days, calendar).planned;
+export function plannedRemoteCells(
+  setup: RemoteSetup,
+  days: readonly string[],
+  calendar: CalendarSets,
+  isMemberOn?: (name: string, date: string) => boolean,
+): Set<string> {
+  return planRemoteCells(setup, days, calendar, isMemberOn).planned;
 }
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;

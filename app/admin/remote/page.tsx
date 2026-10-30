@@ -9,7 +9,10 @@ import { requireAdmin } from "@/lib/admin/auth";
 import { parseMonth, todayInSeoul, weekdaysOfMonth } from "@/lib/attendance";
 import { getRecords } from "@/lib/attendance/store";
 import { getCalendarEntries } from "@/lib/calendar/store";
+import { withoutMembers } from "@/lib/remote";
 import { getRemoteSetup } from "@/lib/remote/store";
+import { ALWAYS, isCurrent, tenureOf } from "@/lib/roster";
+import { getMembers } from "@/lib/roster/store";
 
 import {
   addRemoteGroup,
@@ -51,11 +54,15 @@ export default async function RemotePage({
   } | null = null;
   let failure: string | null = null;
   try {
-    const [setup, entries, records] = await Promise.all([
+    const [fullSetup, members, entries, records] = await Promise.all([
       getRemoteSetup(),
+      getMembers(),
       getCalendarEntries(),
       getRecords({ from: days[0], to: days[days.length - 1] }),
     ]);
+    // 제거한 팀원은 조 편성과 리모트 표에서 뺀다. 조 배정은 지워지지 않아 제거 취소하면 돌아온다.
+    const tenures = tenureOf(members);
+    const setup = withoutMembers(fullSetup, (name) => isCurrent(tenures[name] ?? ALWAYS, today));
     data = { setup, entries, records };
   } catch (error) {
     failure = error instanceof Error ? error.message : "잠시 뒤 다시 시도해 주세요.";

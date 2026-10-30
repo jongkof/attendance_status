@@ -3,14 +3,17 @@
 import { revalidatePath } from "next/cache";
 
 import { isAdmin } from "@/lib/admin/auth";
-import { planImport, type ApplyResult, type ImportPlan } from "@/lib/attendance";
-import { getRecords, getRoster, saveChanges } from "@/lib/attendance/store";
+import { planImport, todayInSeoul, type ApplyResult, type ImportPlan } from "@/lib/attendance";
+import { getRecords, saveChanges } from "@/lib/attendance/store";
+import { currentNames } from "@/lib/roster";
+import { getMembers } from "@/lib/roster/store";
 
 const LOGIN_REQUIRED = "로그인이 필요합니다. 관리자 로그인 후 다시 시도해 주세요.";
 
 async function plan(text: string): Promise<ImportPlan> {
-  const [roster, existing] = await Promise.all([getRoster(), getRecords()]);
-  return planImport(text, { roster, existing });
+  const [members, existing] = await Promise.all([getMembers(), getRecords()]);
+  // 제거된 팀원은 명단에 없는 이름으로 본다.
+  return planImport(text, { roster: currentNames(members, todayInSeoul()), existing });
 }
 
 /** 저장 없이 반영 계획만 돌려준다. */
