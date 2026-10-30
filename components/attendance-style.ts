@@ -35,15 +35,15 @@ export const LEGEND: { label: string; type: AttendanceType }[] = [
   { label: "건강검진", type: "건강검진" },
 ];
 
-/** 한 칸의 크기: 작은 정사각형. 기록이 없는 칸도 같은 크기를 쓴다. */
-export const CELL_BOX = "mx-auto block size-6 rounded-sm p-0 text-center text-[11px] leading-6 font-semibold";
+/** 한 칸의 크기: 작은 정사각형(20px). 기록이 없는 칸도 같은 크기를 쓴다. */
+export const CELL_BOX = "mx-auto block size-5 rounded-sm p-0 text-center text-[11px] leading-5 font-semibold";
 
 /** 눌러서 바꿀 수 있는 칸의 단서: 포인터와 호버 테두리. */
 export const TOGGLE_HINT = "cursor-pointer hover:ring-2 hover:ring-foreground/50";
 
 /** 미확인(?) 칸: 색 없이 바탕에 점선 테두리만 둔 빈칸. */
 export const UNCONFIRMED_BOX =
-  "border border-dashed border-foreground/50 bg-background text-[13px] leading-[1.35rem] font-bold text-muted-foreground";
+  "border border-dashed border-foreground/50 bg-background text-[13px] leading-[1.125rem] font-bold text-muted-foreground";
 
 /** 재직 기간이 아닌 칸("소속 아님"): 근태 없음(녹색)과 달리 칸 모양만 흐리게 남긴다. */
 export const NOT_MEMBER_BOX = "border border-dotted border-foreground/20 bg-transparent opacity-40";
@@ -54,3 +54,13 @@ export const INTERVIEW_FLAG =
 
 /** 휴일 칸: 근태를 보여 주지 않는 중립 음영. */
 export const HOLIDAY_BOX = "bg-muted";
+
+/** 표 행 간격: 현황표·리모트 표·면담 표가 같은 값을 쓴다. 행은 칸 20px + 위아래 1px + 구분선이다. */
+export const BODY_CELL = "px-0.5 py-px";
+export const BODY_HEAD = "h-auto py-0";
+export const HEADER_HEAD = "h-auto py-0.5";
+
+/** 조별 행 배경: 이웃한 조는 서로 다른 톤을 번갈아 쓴다. 조가 없는 행은 바탕색이다. 이름 칸은 bg-inherit로 이어받는다. */
+const GROUP_TONES = ["bg-group-a", "bg-group-b"];
+export const groupTone = (groupIndex: number | null) =>
+  groupIndex === null ? "bg-background" : GROUP_TONES[groupIndex % GROUP_TONES.length];

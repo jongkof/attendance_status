@@ -38,6 +38,8 @@
   --color-att-checkup: var(--att-checkup);
   --color-att-checkup-foreground: var(--att-checkup-foreground);
   --color-att-interview: var(--att-interview);
+  --color-group-a: var(--group-a);
+  --color-group-b: var(--group-b);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -79,6 +81,8 @@
   --att-checkup: oklch(0.88 0.08 195);
   --att-checkup-foreground: oklch(0.35 0.08 200);
   --att-interview: oklch(0.55 0.22 295);
+  --group-a: oklch(0.975 0.014 95);
+  --group-b: oklch(0.97 0.016 245);
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -129,6 +133,8 @@
   --att-checkup: oklch(0.42 0.08 195);
   --att-checkup-foreground: oklch(0.93 0.05 195);
   --att-interview: oklch(0.72 0.17 295);
+  --group-a: oklch(0.2 0.012 95);
+  --group-b: oklch(0.2 0.016 245);
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
@@ -172,4 +178,13 @@
   html {
     @apply font-sans;
   }
+}
+
+/* 표 칸에 마우스를 올렸을 때(TableFrame이 data-hover를 붙인다): 그 행은 옅게, 이름 칸과 날짜 머리글은 더 진하게. */
+tr[data-hover] {
+  background-color: color-mix(in oklab, var(--foreground) 6%, var(--background));
+}
+th[data-hover] {
+  background-color: color-mix(in oklab, var(--foreground) 14%, var(--background));
+  font-weight: 700;
 }

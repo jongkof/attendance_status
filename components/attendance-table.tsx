@@ -1,6 +1,10 @@
 import { AttendanceCell } from "@/components/attendance-cell";
 import {
+  BODY_CELL,
+  BODY_HEAD,
   CELL_BOX,
+  groupTone,
+  HEADER_HEAD,
   HOLIDAY_BOX,
   INTERVIEW_FLAG,
   TYPE_COLOR,
@@ -17,10 +21,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TableFrame } from "@/components/table-frame";
 import { MorningToggleCell, type MorningToggleResult } from "@/components/morning-toggle-cell";
 import { UnconfirmedToggleCell } from "@/components/unconfirmed-toggle-cell";
 import {
   applyMorningConfirmations,
+  focusDayOf,
   summarizeDay,
   type MorningState,
   type RemoteConfirmation,
@@ -147,7 +153,13 @@ export function AttendanceTable({
     }
   }
 
+  const focusDay = focusDayOf(days, today);
+  // 이름이 있는 조만 센다. 조 없는 팀원 묶음은 조 배경 없이 보인다.
+  let groupCount = 0;
+  const toneOf = (groupName: string | null) => groupTone(groupName === null ? null : groupCount++);
+
   return (
+    <TableFrame focusDay={focusDay}>
     <Table
       className="table-fixed"
       style={{
@@ -165,19 +177,22 @@ export function AttendanceTable({
         <TableRow>
           {hasStrip ? (
             <TableHead
-              className="sticky left-0 z-10 bg-background"
+              className={cn("sticky left-0 z-10 bg-background", HEADER_HEAD)}
               aria-label="조"
             />
           ) : null}
-          <TableHead className={cn("sticky z-10 bg-background", nameLeft)}>
+          <TableHead data-name-head="" className={cn("sticky z-10 bg-background", HEADER_HEAD, nameLeft)}>
             이름
           </TableHead>
           {days.map((day, index) => (
             <TableHead
               key={day}
+              data-day={day}
+              data-focus-day={day === focusDay ? "" : undefined}
               data-week-start={startsWeek(day, index) ? "" : undefined}
               className={cn(
-                "px-0.5 text-center",
+                "px-0.5 text-center leading-4",
+                HEADER_HEAD,
                 startsWeek(day, index) && WEEK_BORDER,
                 day === today && "bg-accent text-accent-foreground",
               )}
@@ -218,11 +233,13 @@ export function AttendanceTable({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {shown.map(({ name: groupName, members }) =>
-          members.map((name, rowIndex) => (
+        {shown.map(({ name: groupName, members }) => {
+          const tone = toneOf(groupName);
+          return members.map((name, rowIndex) => (
             <TableRow
               key={name}
               className={cn(
+                tone,
                 hasStrip && rowIndex === 0 && "border-t-2 border-foreground/25",
               )}
             >
@@ -242,7 +259,8 @@ export function AttendanceTable({
               <TableHead
                 scope="row"
                 className={cn(
-                  "sticky z-10 bg-background font-medium whitespace-nowrap",
+                  "sticky z-10 bg-inherit font-medium whitespace-nowrap",
+                  BODY_HEAD,
                   nameLeft,
                 )}
               >
@@ -333,15 +351,16 @@ export function AttendanceTable({
                 return (
                   <TableCell
                     key={day}
+                    data-day={day}
                     data-week-start={startsWeek(day, index) ? "" : undefined}
                     className={cn(
-                      "p-0.5",
+                      BODY_CELL,
                       startsWeek(day, index) && WEEK_BORDER,
                       day === today && "bg-accent",
                     )}
                   >
                     {interviewOn ? (
-                      <div className="relative mx-auto size-6">
+                      <div className="relative mx-auto size-5">
                         {content}
                         <span
                           role="img"
@@ -357,8 +376,8 @@ export function AttendanceTable({
                 );
               })}
             </TableRow>
-          )),
-        )}
+          ));
+        })}
       </TableBody>
       {showSummary ? (
         <TableFooter>
@@ -378,7 +397,7 @@ export function AttendanceTable({
                   key={day}
                   data-week-start={startsWeek(day, index) ? "" : undefined}
                   className={cn(
-                    "px-0.5 py-1 text-center text-xs",
+                    "px-0.5 py-0.5 text-center text-xs",
                     startsWeek(day, index) && WEEK_BORDER,
                     day === today && "bg-accent",
                   )}
@@ -391,5 +410,6 @@ export function AttendanceTable({
         </TableFooter>
       ) : null}
     </Table>
+    </TableFrame>
   );
 }

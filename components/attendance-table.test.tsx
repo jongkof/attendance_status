@@ -231,7 +231,7 @@ describe("한 글자 칸 표기", () => {
   test("칸은 작은 정사각형이고 출근 칸에는 글자가 없다", () => {
     renderTable();
     const empty = screen.getByRole("img", { name: "홍ㅇㅇ 2026-10-29 출근" });
-    expect(empty.className).toContain("size-6");
+    expect(empty.className).toContain("size-5");
     expect(empty).toBeEmptyDOMElement();
   });
 
