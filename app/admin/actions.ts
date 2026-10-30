@@ -5,8 +5,18 @@ import { revalidatePath } from "next/cache";
 import { isAdmin } from "@/lib/admin/auth";
 import { isHolidayDate } from "@/lib/calendar/store";
 import { loadPlan } from "@/app/load-plan";
-import { checkCanConfirmRemote, nextMorningState, todayInSeoul, type MorningState } from "@/lib/attendance";
+import { isActiveOn } from "@/lib/roster";
+import { getMembers } from "@/lib/roster/store";
 import {
+  checkCanConfirmRemote,
+  checkCellEdit,
+  nextMorningState,
+  todayInSeoul,
+  type CellChoice,
+  type MorningState,
+} from "@/lib/attendance";
+import {
+  editCell,
   getConfirmations,
   getRecords,
   setConfirmation,
@@ -63,5 +73,30 @@ export async function toggleMorningConfirmation(name: string, date: string): Pro
     return { ok: true, state };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : "아침 확인을 바꾸지 못했습니다." };
+  }
+}
+
+export type EditCellResult = { ok: true } | { ok: false; error: string };
+
+/**
+ * 현황표 팝업에서 고른 근태 유형(또는 기록 지우기)을 그 칸에 저장한다. 수정 시각이 수신 시각이 된다.
+ * 근무일의 재직 중인 팀원 칸만 고칠 수 있고, 서버에서 규칙을 다시 검사한다.
+ */
+export async function editAttendanceCell(name: string, date: string, choice: CellChoice): Promise<EditCellResult> {
+  if (!(await isAdmin())) return { ok: false, error: LOGIN_REQUIRED };
+  if (typeof name !== "string" || typeof date !== "string") return { ok: false, error: "요청이 올바르지 않습니다." };
+  try {
+    const [members, isHoliday] = await Promise.all([getMembers(), isHolidayDate(date)]);
+    const member = members.find((candidate) => candidate.name === name);
+    const check = checkCellEdit({ date, isHoliday, isMember: !!member && isActiveOn(member, date), choice });
+    if (!check.ok) return check;
+    const saved = await editCell(name, date, choice, new Date().toISOString());
+    if (!saved.ok) return saved;
+    revalidatePath("/");
+    revalidatePath("/admin");
+    revalidatePath("/admin/mail");
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "근태를 바꾸지 못했습니다." };
   }
 }

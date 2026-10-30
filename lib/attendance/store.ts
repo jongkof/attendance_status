@@ -3,6 +3,7 @@ import "server-only";
 import { supabaseAdmin as supabase } from "@/lib/supabase/server";
 import type { RemoteConfirmation } from "./morning-confirmation";
 import { checkCanMarkUnconfirmed } from "./unconfirmed";
+import type { CellChoice } from "./cell-edit";
 import type { AttendanceChange, AttendanceRecord, UnconfirmedMark } from "./types";
 
 const PAGE_SIZE = 1000;
@@ -173,4 +174,29 @@ export async function toggleUnconfirmed(
   const { data, error } = await client.rpc("toggle_unconfirmed", { p_member_id: member.data.id, p_work_date: date });
   if (error) return { ok: false, error: `미확인 표시를 바꾸지 못했습니다: ${error.message}` };
   return { ok: true, marked: data as boolean };
+}
+
+/**
+ * 관리자가 한 칸의 근태 기록을 직접 고치거나(record) 지운다(clear). 시간과 비고는 비우고 수신 시각은 호출하는 쪽이 정한다.
+ * 그 칸의 미확인(?) 표시와 아침 확인 결과도 같은 트랜잭션에서 지워진다. 규칙 검사는 호출하는 쪽이 한다.
+ */
+export async function editCell(
+  name: string,
+  date: string,
+  choice: CellChoice,
+  receivedAt: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const client = supabase();
+  const member = await client.from("members").select("id").eq("name", name).maybeSingle<{ id: number }>();
+  if (member.error) return { ok: false, error: `명단을 읽지 못했습니다: ${member.error.message}` };
+  if (!member.data) return { ok: false, error: "팀원 명단에 없는 이름입니다." };
+  const { error } = await client.rpc("edit_attendance_cell", {
+    p_member_id: member.data.id,
+    p_work_date: date,
+    p_type: choice.kind === "record" ? choice.type : null,
+    p_period: choice.kind === "record" ? choice.period : null,
+    p_received_at: receivedAt,
+  });
+  if (error) return { ok: false, error: `근태를 저장하지 못했습니다: ${error.message}` };
+  return { ok: true };
 }

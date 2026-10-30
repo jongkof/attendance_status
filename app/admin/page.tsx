@@ -2,6 +2,7 @@ import { CircleAlertIcon } from "lucide-react";
 import { AdminNav } from "@/components/admin-nav";
 import { AttendanceLegend } from "@/components/attendance-legend";
 import { AttendanceTable } from "@/components/attendance-table";
+import { CellEditProvider, EditModeBar, EditModeFrame, EditModeSwitch } from "@/components/cell-edit";
 import { MonthNav } from "@/components/month-nav";
 import { PageShell } from "@/components/page-shell";
 import { YearNotice } from "@/components/year-notice";
@@ -11,15 +12,13 @@ import { parseMonth, todayInSeoul, weekdaysOfMonth } from "@/lib/attendance";
 
 import { loadMonth } from "@/app/load-month";
 
-import { toggleMorningConfirmation, toggleUnconfirmed } from "./actions";
+import { setInterviewCell } from "./interviews/actions";
+import { setRemoteCell } from "./remote/actions";
+import { editAttendanceCell, toggleMorningConfirmation, toggleUnconfirmed } from "./actions";
 
 export const metadata = { title: "관리자 현황표 · 근태 현황판" };
 
-export default async function AdminPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ month?: string | string[] }>;
-}) {
+export default async function AdminPage({ searchParams }: { searchParams: Promise<{ month?: string | string[] }> }) {
   await requireAdmin("/admin");
   const today = todayInSeoul();
   const requested = (await searchParams).month;
@@ -56,31 +55,46 @@ export default async function AdminPage({
     );
   }
 
+  const boardActions = (
+    <div className="flex flex-col items-end gap-2">
+      {actions}
+      <EditModeSwitch />
+    </div>
+  );
+
   return (
-    <PageShell
-      title={title}
-      description="아침에 실제 출근을 확인하고, 공지도 연락도 없이 자리에 없는 사람의 칸(오늘·지난 날짜의 녹색 칸)을 누르면 미확인(?)이 됩니다. 다시 누르면 출근으로 돌아옵니다. 리모트로 보이는 칸(노란 칸)은 누를 때마다 리모트 → 출근 → 미확인(?) → 리모트로 바뀌며, 근태 기록은 그대로입니다."
-      actions={actions}
+    <CellEditProvider
+      actions={{ edit: editAttendanceCell, setRemotePlan: setRemoteCell, setInterview: setInterviewCell }}
     >
-      <YearNotice year={year} />
-      <AttendanceLegend />
-      <AttendanceTable
-        roster={view.roster}
-        days={days}
-        records={view.records}
-        unconfirmed={view.unconfirmed}
-        confirmations={view.confirmations}
-        dayMarks={view.dayMarks}
-        blocks={view.blocks}
-        planned={view.planned}
-        added={view.added}
-        tenures={view.tenures}
-        interviews={view.interviews}
-        today={today}
-        showSummary
-        toggle={toggleUnconfirmed}
-        toggleMorning={toggleMorningConfirmation}
-      />
-    </PageShell>
+      <PageShell
+        title={title}
+        description="아침에 실제 출근을 확인하고, 공지도 연락도 없이 자리에 없는 사람의 칸(오늘·지난 날짜의 녹색 칸)을 누르면 미확인(?)이 됩니다. 다시 누르면 출근으로 돌아옵니다. 리모트로 보이는 칸(노란 칸)은 누를 때마다 리모트 → 출근 → 미확인(?) → 리모트로 바뀌며, 근태 기록은 그대로입니다."
+        actions={boardActions}
+      >
+        <YearNotice year={year} />
+        <EditModeBar />
+        <AttendanceLegend />
+        <EditModeFrame>
+          <AttendanceTable
+            roster={view.roster}
+            days={days}
+            records={view.records}
+            unconfirmed={view.unconfirmed}
+            confirmations={view.confirmations}
+            dayMarks={view.dayMarks}
+            blocks={view.blocks}
+            planned={view.planned}
+            added={view.added}
+            tenures={view.tenures}
+            interviews={view.interviews}
+            today={today}
+            showSummary
+            edit
+            toggle={toggleUnconfirmed}
+            toggleMorning={toggleMorningConfirmation}
+          />
+        </EditModeFrame>
+      </PageShell>
+    </CellEditProvider>
   );
 }

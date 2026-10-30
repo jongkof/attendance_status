@@ -188,3 +188,16 @@ th[data-hover] {
   background-color: color-mix(in oklab, var(--foreground) 14%, var(--background));
   font-weight: 700;
 }
+
+/* 개별 수정 뒤 바뀐 칸이 잠깐 깜빡인다. */
+@keyframes cell-flash {
+  from {
+    box-shadow: 0 0 0 3px var(--foreground);
+  }
+  to {
+    box-shadow: 0 0 0 3px transparent;
+  }
+}
+.cell-flash {
+  animation: cell-flash 1.2s ease-out;
+}
