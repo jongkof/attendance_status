@@ -1,4 +1,4 @@
-import { HOLIDAY_BOX, LEGEND, TYPE_COLOR, TYPE_LETTER, UNCONFIRMED_BOX } from "@/components/attendance-style";
+import { HOLIDAY_BOX, INTERVIEW_FLAG, LEGEND, TYPE_COLOR, TYPE_LETTER, UNCONFIRMED_BOX } from "@/components/attendance-style";
 import { cn } from "@/lib/utils";
 
 /** 범례 견본: 칸과 같은 모양의 작은 정사각형에 같은 한 글자를 적는다. */
@@ -20,6 +20,12 @@ export function AttendanceLegend() {
           ?
         </span>
         미확인
+      </li>
+      <li className="flex items-center gap-1.5">
+        <span aria-hidden className={cn(SWATCH, "relative bg-muted")}>
+          <span className={INTERVIEW_FLAG} />
+        </span>
+        면담(칸 모서리 플래그, 근태와 별개)
       </li>
       <li className="flex items-center gap-1.5">
         <span aria-hidden className={cn(SWATCH, HOLIDAY_BOX)} />

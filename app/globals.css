@@ -37,6 +37,7 @@
   --color-att-training-foreground: var(--att-training-foreground);
   --color-att-checkup: var(--att-checkup);
   --color-att-checkup-foreground: var(--att-checkup-foreground);
+  --color-att-interview: var(--att-interview);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -77,6 +78,7 @@
   --att-training-foreground: oklch(0.36 0.14 300);
   --att-checkup: oklch(0.88 0.08 195);
   --att-checkup-foreground: oklch(0.35 0.08 200);
+  --att-interview: oklch(0.55 0.22 295);
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -126,6 +128,7 @@
   --att-training-foreground: oklch(0.93 0.05 300);
   --att-checkup: oklch(0.42 0.08 195);
   --att-checkup-foreground: oklch(0.93 0.05 195);
+  --att-interview: oklch(0.72 0.17 295);
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);

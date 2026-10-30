@@ -5,6 +5,7 @@ import { loadPlan } from "@/app/load-plan";
 import { applyMorningConfirmations } from "@/lib/attendance";
 import { getConfirmations, getRecords, getUnconfirmed } from "@/lib/attendance/store";
 import { dayMarksFor } from "@/lib/calendar";
+import { getInterviews } from "@/lib/interview/store";
 import type { MailInput } from "@/lib/mail";
 import { activeNamesOn } from "@/lib/roster";
 import { getMembers } from "@/lib/roster/store";
@@ -22,11 +23,12 @@ function addDays(date: string, days: number): string {
  */
 export async function loadMailInput(date: string, origin: string): Promise<MailInput> {
   const to = addDays(date, LOOKAHEAD_DAYS);
-  const [members, rawRecords, rawUnconfirmed, confirmations, plan] = await Promise.all([
+  const [members, rawRecords, rawUnconfirmed, confirmations, interviews, plan] = await Promise.all([
     getMembers(),
     getRecords({ from: date, to }),
     getUnconfirmed({ from: date, to: date }),
     getConfirmations({ from: date, to: date }),
+    getInterviews({ from: date, to: date }),
     loadPlan([date]),
   ]);
   // 아침 확인 결과(출근, 미확인)를 반영한다. 근태 기록 자체는 바뀌지 않고 이 계산용 사본만 바뀐다.
@@ -46,6 +48,7 @@ export async function loadMailInput(date: string, origin: string): Promise<MailI
     roster: activeNamesOn(members, date),
     records: records.map(({ name, date: recordDate, type, period, time }) => ({ name, date: recordDate, type, period, time })),
     unconfirmedNames: unconfirmed.map((mark) => mark.name),
+    interviewNames: interviews.map((mark) => mark.name),
     plannedNames: planned.filter((cell) => cell.endsWith(`|${date}`)).map((cell) => cell.slice(0, -date.length - 1)),
     holiday: marks[date].holiday,
     events: marks[date].events,

@@ -2,6 +2,7 @@ import { AttendanceCell } from "@/components/attendance-cell";
 import {
   CELL_BOX,
   HOLIDAY_BOX,
+  INTERVIEW_FLAG,
   TYPE_COLOR,
   TYPE_LETTER,
   NOT_MEMBER_BOX,
@@ -29,6 +30,7 @@ import {
   type UnconfirmedMark,
 } from "@/lib/attendance";
 import type { DayMark } from "@/lib/calendar";
+import type { InterviewMark } from "@/lib/interview";
 import type { RosterBlock } from "@/lib/remote";
 import { ALWAYS, isActiveOn, type Tenure } from "@/lib/roster";
 import { cn } from "@/lib/utils";
@@ -65,6 +67,7 @@ export function AttendanceTable({
   planned = [],
   added = [],
   tenures = {},
+  interviews = [],
   showSummary = false,
   today,
   toggle,
@@ -86,6 +89,8 @@ export function AttendanceTable({
   added?: readonly string[];
   /** 팀원별 재직 기간. 재직 기간이 아닌 날짜의 칸은 흐린 "소속 아님" 칸이 되고 집계에서 빠진다. 없는 팀원은 처음부터 재직 중이다. */
   tenures?: Readonly<Record<string, Tenure>>;
+  /** 면담이 켜진 칸. 휴일과 "소속 아님"을 뺀 모든 종류의 칸 모서리에 같은 플래그가 얹힌다. 근태 상태와 집계는 바뀌지 않는다. */
+  interviews?: readonly InterviewMark[];
   /** 날짜별 집계 행을 아래에 붙인다(관리자용). */
   showSummary?: boolean;
   today: string;
@@ -103,6 +108,7 @@ export function AttendanceTable({
   // 첫 열은 주 경계선이 필요 없다.
   const plannedCells = new Set(planned);
   const addedCells = new Set(added);
+  const interviewed = new Set(interviews.map((mark) => `${mark.name}|${mark.date}`));
   const confirmed = new Map(confirmations.map((entry) => [`${entry.name}|${entry.date}`, entry.result]));
   const hasStrip = blocks?.some((block) => block.name !== null) ?? false;
   const known = new Set(blocks?.flatMap((block) => block.members));
@@ -251,17 +257,9 @@ export function AttendanceTable({
                 const morning: MorningState = remoteLooking
                   ? (confirmed.get(`${name}|${day}`) ?? "remote")
                   : "remote";
-                return (
-                  <TableCell
-                    key={day}
-                    data-week-start={startsWeek(day, index) ? "" : undefined}
-                    className={cn(
-                      "p-0.5",
-                      startsWeek(day, index) && WEEK_BORDER,
-                      day === today && "bg-accent",
-                    )}
-                  >
-                    {!isMemberOn(name, day) ? (
+                const interviewOn =
+                  isMemberOn(name, day) && !dayMarks[day]?.holiday && interviewed.has(`${name}|${day}`);
+                const content = !isMemberOn(name, day) ? (
                       <div
                         role="img"
                         aria-label={`${name} ${day} 소속 아님`}
@@ -331,6 +329,29 @@ export function AttendanceTable({
                         aria-label={`${name} ${day} 출근`}
                         className={cn(CELL_BOX, TYPE_COLOR.출근)}
                       />
+                    );
+                return (
+                  <TableCell
+                    key={day}
+                    data-week-start={startsWeek(day, index) ? "" : undefined}
+                    className={cn(
+                      "p-0.5",
+                      startsWeek(day, index) && WEEK_BORDER,
+                      day === today && "bg-accent",
+                    )}
+                  >
+                    {interviewOn ? (
+                      <div className="relative mx-auto size-6">
+                        {content}
+                        <span
+                          role="img"
+                          aria-label={`${name} ${day} 면담`}
+                          title="면담"
+                          className={INTERVIEW_FLAG}
+                        />
+                      </div>
+                    ) : (
+                      content
                     )}
                   </TableCell>
                 );
