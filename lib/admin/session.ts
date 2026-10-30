@@ -8,8 +8,12 @@ function sign(expiresAt: number, secret: string): string {
 }
 
 /** `<만료 시각(ms)>.<서명>` 형태의 로그인 토큰을 만든다. secret은 현재 비밀번호에서 파생한 값이다. */
-export function createSessionToken(secret: string, now: Date = new Date()): string {
-  const expiresAt = now.getTime() + SESSION_MAX_AGE_SECONDS * 1000;
+export function createSessionToken(
+  secret: string,
+  now: Date = new Date(),
+  maxAgeSeconds: number = SESSION_MAX_AGE_SECONDS,
+): string {
+  const expiresAt = now.getTime() + maxAgeSeconds * 1000;
   return `${expiresAt}.${sign(expiresAt, secret)}`;
 }
 
