@@ -53,6 +53,6 @@ completed
 <!-- Append concise evidence and preserve earlier entries when status changes.
 Execution Blocker is the current impediment for an active task, not a declared
 task dependency. In a superseded task, preserved entries are historical. -->
-- Verification: 단위·컴포넌트·거절 테스트 170개 통과(`lib/remote/plan.test.ts` 직접 수정·주 체크·재적용·기록 우선, `components/remote-manager.test.tsx` 칸 토글·점·주 체크·휴일 주 체크 상태, `app/admin/remote/actions.test.ts` 비로그인 거절), tsc는 기존 `LayoutProps` 오류만, eslint 통과. 실제 화면은 이 worktree에 `.env.local`이 없고 새 SQL(`20261030040000_remote_manual_edits.sql`)이 아직 실행되지 않아 확인하지 못했다. 사용자가 SQL을 실행한 뒤 칸·주 체크를 바꿔 현황표 "리+", `/admin/mail` 미리보기, 하단 집계를 확인하고 시험 데이터를 되돌려야 한다.
+- Verification: 단위·컴포넌트·거절 테스트 170개 통과(`lib/remote/plan.test.ts` 직접 수정·주 체크·재적용·기록 우선, `components/remote-manager.test.tsx` 칸 토글·점·주 체크·휴일 주 체크 상태, `app/admin/remote/actions.test.ts` 비로그인 거절), tsc는 기존 `LayoutProps` 오류만, eslint 통과. 실제 화면(next-dev-loop, 운영 DB): 홍ㅇㅇ 10/14·10/16 직접 지정으로 한 주 두 번 리모트, 점 표시, 현황표 "리+", 하단 집계와 `/admin/mail` 10/14 미리보기(리모트 2명) 반영 확인. 10/12 주 체크로 그 주 리모트 소멸·해제 시 복원, 휴일 주(10/5)가 체크된 채 보이고 풀면 양ㅇㅇ 10/6 리모트가 계획되며 다시 켜면 원래대로 돌아옴. 시험 데이터는 모두 되돌림.
 - Blocker: —
 - Revision: —
