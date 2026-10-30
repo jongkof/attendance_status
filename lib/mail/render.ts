@@ -32,6 +32,7 @@ const BOX = {
 
 const SECTION_COLOR: Record<MailSection["id"], string> = {
   unconfirmed: "#444444",
+  interview: "#5B3FA6",
   absent: "#A32D2D",
   remote: "#7A5A00",
   "morning-half": "#8A2552",

@@ -132,6 +132,9 @@ export function buildMail(input: MailInput): MailContent {
     ...(summary.remote > 0 ? [`리모트 ${summary.remote}`] : []),
   ].join(" · ");
 
+  // 면담은 근태가 아니라 표시라서 집계와 다른 구역에는 영향이 없고, 같은 사람이 그대로 나온다.
+  const interviewees = new Set(input.interviewNames ?? []);
+
   const byKey = new Map(input.records.map((record) => [`${record.name}|${record.date}`, record]));
   const section = (id: MailSection["id"], title: string, groups: MailGroup[]): MailSection[] => {
     const count = groups.reduce((sum, group) => sum + group.people.length, 0);
@@ -155,6 +158,9 @@ export function buildMail(input: MailInput): MailContent {
   const sections: MailSection[] = [
     ...section("unconfirmed", "미확인", [
       { label: null, people: input.roster.filter((name) => unconfirmed.has(name)).map((name) => ({ name, suffix: null })) },
+    ]),
+    ...section("interview", "오늘 면담", [
+      { label: null, people: input.roster.filter((name) => interviewees.has(name)).map((name) => ({ name, suffix: null })) },
     ]),
     ...section("absent", "부재", absentGroups),
     ...section("remote", "리모트", [{ label: null, people: peopleIn("remote", () => null) }]),

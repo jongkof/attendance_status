@@ -309,3 +309,37 @@ describe("계획된 리모트", () => {
     expect(mail.subject).not.toContain("리모트");
   });
 });
+
+describe("오늘 면담 구역", () => {
+  const withInterview = (interviewNames: string[], rest: Partial<MailInput> = {}) =>
+    workday(buildMail(input({ records: MONDAY, interviewNames, ...rest })));
+
+  test("면담 대상자 이름이 미확인 다음, 부재 앞 구역에 명단 순서로 나온다", () => {
+    const content = withInterview(["윤ㅇㅇ", "홍ㅇㅇ"], { unconfirmedNames: ["양ㅇㅇ"] });
+    expect(content.sections.map((section) => section.id)).toEqual(["unconfirmed", "interview", "absent", "remote"]);
+    const section = content.sections.find((entry) => entry.id === "interview")!;
+    expect(section.title).toBe("오늘 면담 2명");
+    expect(section.groups[0].people.map((person) => person.name)).toEqual(["홍ㅇㅇ", "윤ㅇㅇ"]);
+    expect(content.html).toContain("오늘 면담 2명");
+    expect(content.text).toContain("오늘 면담 2명");
+  });
+
+  test("대상자가 없으면 구역이 없다", () => {
+    expect(withInterview([]).sections.map((section) => section.id)).toEqual(["absent", "remote"]);
+  });
+
+  test("명단에 없는 이름은 나오지 않는다", () => {
+    expect(withInterview(["홍길동"]).sections.some((section) => section.id === "interview")).toBe(false);
+  });
+
+  test("집계 5개 항목과 제목, 다른 구역의 인원은 면담이 있어도 같고 같은 사람이 다른 구역에도 나온다", () => {
+    const before = workday(buildMail(input({ records: MONDAY })));
+    const after = withInterview(["윤ㅇㅇ", "강ㅇㅇ"]);
+    expect(after.summary).toEqual(before.summary);
+    expect(after.subject).toBe(before.subject);
+    const people = (id: string) =>
+      after.sections.find((section) => section.id === id)!.groups.flatMap((group) => group.people.map((person) => person.name));
+    expect(people("absent")).toContain("윤ㅇㅇ");
+    expect(people("remote")).toContain("강ㅇㅇ");
+  });
+});

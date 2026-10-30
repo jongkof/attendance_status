@@ -419,3 +419,67 @@ describe("관리자 표의 아침 확인 3단계 토글", () => {
     expect(counts).toEqual({ 리모트: 1, 출근: 1, 부재: 0, "오전 반차": 0, 미확인: 1 });
   });
 });
+
+describe("면담 플래그", () => {
+  const holidayMarks = { "2026-10-09": { holiday: "한글날", events: [] } };
+  const interviews = [
+    { name: "양ㅇㅇ", date: "2026-10-30" }, // 근태 기록 칸
+    { name: "홍ㅇㅇ", date: "2026-10-27" }, // 계획된 리모트 칸
+    { name: "홍ㅇㅇ", date: "2026-10-28" }, // 미확인 칸
+    { name: "홍ㅇㅇ", date: "2026-10-29" }, // 일정 없는 칸
+    { name: "홍ㅇㅇ", date: "2026-10-09" }, // 휴일 칸
+    { name: "양ㅇㅇ", date: "2026-10-01" }, // 소속 아님 칸
+  ];
+  const flags = () => screen.queryAllByRole("img").filter((element) => element.getAttribute("title") === "면담");
+
+  function renderFlagged(admin: boolean) {
+    return render(
+      <AttendanceTable
+        roster={roster}
+        days={days}
+        records={records}
+        unconfirmed={[{ name: "홍ㅇㅇ", date: "2026-10-28" }]}
+        planned={["홍ㅇㅇ|2026-10-27"]}
+        dayMarks={holidayMarks}
+        tenures={{ 양ㅇㅇ: { start: "2026-10-02", removedOn: null } }}
+        interviews={interviews}
+        today="2026-10-29"
+        showSummary={admin}
+        toggle={admin ? vi.fn(async () => ({ ok: true as const, marked: true })) : undefined}
+        toggleMorning={admin ? vi.fn(async () => ({ ok: true as const, state: "present" as const })) : undefined}
+      />,
+    );
+  }
+
+  test.each([false, true])("휴일과 소속 아님을 뺀 모든 종류의 칸에 같은 플래그가 보이고 칸은 그대로다(관리자=%s)", (admin) => {
+    renderFlagged(admin);
+    expect(flags().map((flag) => flag.getAttribute("aria-label"))).toEqual([
+      "양ㅇㅇ 2026-10-30 면담",
+      "홍ㅇㅇ 2026-10-27 면담",
+      "홍ㅇㅇ 2026-10-28 면담",
+      "홍ㅇㅇ 2026-10-29 면담",
+    ]);
+    expect(new Set(flags().map((flag) => flag.className)).size).toBe(1);
+    // 근태 표기와 색은 그대로다.
+    const trip = screen.getByRole("button", { name: /양ㅇㅇ 10\/30\(금\) 건강검진/ });
+    expect(trip).toHaveTextContent(/^건$/);
+    expect(trip.className).toContain("bg-att-checkup");
+  });
+
+  test("면담이 있어도 관리자 집계 항목은 달라지지 않는다", () => {
+    const summaryText = (value: readonly { name: string; date: string }[]) => {
+      const { container, unmount } = render(
+        <AttendanceTable roster={roster} days={days} records={records} interviews={value} today="2026-10-29" showSummary />,
+      );
+      const text = [...container.querySelectorAll("tfoot")].map((foot) => foot.textContent).join("|");
+      unmount();
+      return text;
+    };
+    expect(summaryText(interviews)).toBe(summaryText([]));
+  });
+
+  test("범례에 면담 플래그 설명이 있다", () => {
+    render(<AttendanceLegend />);
+    expect(screen.getByText(/^면담/)).toBeInTheDocument();
+  });
+});

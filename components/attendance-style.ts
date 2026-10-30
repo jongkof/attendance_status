@@ -48,5 +48,9 @@ export const UNCONFIRMED_BOX =
 /** 재직 기간이 아닌 칸("소속 아님"): 근태 없음(녹색)과 달리 칸 모양만 흐리게 남긴다. */
 export const NOT_MEMBER_BOX = "border border-dotted border-foreground/20 bg-transparent opacity-40";
 
+/** 면담 플래그: 칸 오른쪽 위 모서리의 작은 삼각형. 칸의 한 글자와 색을 가리지 않도록 모서리에만 둔다. */
+export const INTERVIEW_FLAG =
+  "absolute top-0 right-0 size-2 rounded-tr-sm bg-att-interview [clip-path:polygon(0_0,100%_0,100%_100%)]";
+
 /** 휴일 칸: 근태를 보여 주지 않는 중립 음영. */
 export const HOLIDAY_BOX = "bg-muted";
