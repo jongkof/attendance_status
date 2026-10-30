@@ -54,6 +54,7 @@ export default async function Home({
         days={days}
         records={view.records}
         unconfirmed={view.unconfirmed}
+        confirmations={view.confirmations}
         dayMarks={view.dayMarks}
         blocks={view.blocks}
         planned={view.planned}

@@ -10,7 +10,7 @@ import { parseMonth, todayInSeoul, weekdaysOfMonth } from "@/lib/attendance";
 
 import { loadMonth } from "@/app/load-month";
 
-import { toggleUnconfirmed } from "./actions";
+import { toggleMorningConfirmation, toggleUnconfirmed } from "./actions";
 
 export const metadata = { title: "관리자 현황표 · 근태 현황판" };
 
@@ -57,7 +57,7 @@ export default async function AdminPage({
   return (
     <PageShell
       title={title}
-      description="아침에 실제 출근을 확인하고, 공지도 연락도 없이 자리에 없는 사람의 칸(오늘·지난 날짜의 녹색 칸)을 누르면 미확인(?)이 됩니다. 다시 누르면 출근으로 돌아옵니다."
+      description="아침에 실제 출근을 확인하고, 공지도 연락도 없이 자리에 없는 사람의 칸(오늘·지난 날짜의 녹색 칸)을 누르면 미확인(?)이 됩니다. 다시 누르면 출근으로 돌아옵니다. 리모트로 보이는 칸(노란 칸)은 누를 때마다 리모트 → 출근 → 미확인(?) → 리모트로 바뀌며, 근태 기록은 그대로입니다."
       actions={actions}
     >
       <AttendanceLegend />
@@ -66,6 +66,7 @@ export default async function AdminPage({
         days={days}
         records={view.records}
         unconfirmed={view.unconfirmed}
+        confirmations={view.confirmations}
         dayMarks={view.dayMarks}
         blocks={view.blocks}
         planned={view.planned}
@@ -73,6 +74,7 @@ export default async function AdminPage({
         today={today}
         showSummary
         toggle={toggleUnconfirmed}
+        toggleMorning={toggleMorningConfirmation}
       />
     </PageShell>
   );

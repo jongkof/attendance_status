@@ -15,9 +15,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { MorningToggleCell, type MorningToggleResult } from "@/components/morning-toggle-cell";
 import { UnconfirmedToggleCell } from "@/components/unconfirmed-toggle-cell";
 import {
+  applyMorningConfirmations,
   summarizeDay,
+  type MorningState,
+  type RemoteConfirmation,
   type DaySummary,
   weekdayLabel,
   type AttendanceRecord,
@@ -53,6 +57,7 @@ export function AttendanceTable({
   days,
   records,
   unconfirmed = [],
+  confirmations = [],
   dayMarks = {},
   blocks,
   planned = [],
@@ -60,11 +65,14 @@ export function AttendanceTable({
   showSummary = false,
   today,
   toggle,
+  toggleMorning,
 }: {
   roster: readonly string[];
   days: readonly string[];
   records: readonly AttendanceRecord[];
   unconfirmed?: readonly UnconfirmedMark[];
+  /** 리모트로 보이는 칸의 아침 확인 결과(출근, 미확인). 근태 기록은 바꾸지 않고 표시와 집계만 바꾼다. */
+  confirmations?: readonly RemoteConfirmation[];
   /** 날짜별 휴일·행사 표시. 휴일 열은 근태를 보여 주지 않고 음영 칸이 된다. */
   dayMarks?: Record<string, DayMark>;
   /** 조 편성 묶음(미배정, 조 순서). 있으면 세로 조 띠와 조 사이 굵은 선이 생긴다. 없으면 명단 순서 그대로다. */
@@ -78,6 +86,8 @@ export function AttendanceTable({
   today: string;
   /** 주면 오늘과 지난 날짜의 일정 없는 칸을 눌러 미확인(?)을 켜고 끌 수 있다(관리자용). */
   toggle?: (name: string, date: string) => Promise<ToggleResult>;
+  /** 주면 오늘과 지난 날짜의 리모트로 보이는 칸을 눌러 리모트 → 출근 → 미확인(?) → 리모트로 바꿀 수 있다(관리자용). */
+  toggleMorning?: (name: string, date: string) => Promise<MorningToggleResult>;
 }) {
   const byCell = new Map(
     records.map((record) => [`${record.name}|${record.date}`, record]),
@@ -88,6 +98,7 @@ export function AttendanceTable({
   // 첫 열은 주 경계선이 필요 없다.
   const plannedCells = new Set(planned);
   const addedCells = new Set(added);
+  const confirmed = new Map(confirmations.map((entry) => [`${entry.name}|${entry.date}`, entry.result]));
   const hasStrip = blocks?.some((block) => block.name !== null) ?? false;
   const known = new Set(blocks?.flatMap((block) => block.members));
   const shown: RosterBlock[] = blocks
@@ -106,16 +117,18 @@ export function AttendanceTable({
   const summaries: Record<string, DaySummary | null> = {};
   if (showSummary) {
     const everyone = shown.flatMap((block) => block.members);
+    const applied = applyMorningConfirmations({ records, unconfirmed, planned, confirmations });
+    const appliedPlanned = new Set(applied.planned);
     for (const day of days) {
       summaries[day] = dayMarks[day]?.holiday
         ? null
         : summarizeDay(
             everyone,
-            records.filter((record) => record.date === day),
-            unconfirmed
+            applied.records.filter((record) => record.date === day),
+            applied.unconfirmed
               .filter((mark) => mark.date === day)
               .map((mark) => mark.name),
-            everyone.filter((name) => plannedCells.has(`${name}|${day}`)),
+            everyone.filter((name) => appliedPlanned.has(`${name}|${day}`)),
           );
     }
   }
@@ -223,6 +236,13 @@ export function AttendanceTable({
               </TableHead>
               {days.map((day, index) => {
                 const record = byCell.get(`${name}|${day}`);
+                // 리모트로 보이는 칸: 리모트 기록, 또는 기록·미확인 표시가 없는 계획된 리모트. 아침 확인 결과는 여기에만 적용된다.
+                const remoteLooking = record
+                  ? record.type === "리모트"
+                  : plannedCells.has(`${name}|${day}`) && !marked.has(`${name}|${day}`);
+                const morning: MorningState = remoteLooking
+                  ? (confirmed.get(`${name}|${day}`) ?? "remote")
+                  : "remote";
                 return (
                   <TableCell
                     key={day}
@@ -239,6 +259,28 @@ export function AttendanceTable({
                         aria-label={`${name} ${day} ${dayMarks[day].holiday} 휴일`}
                         className={cn(CELL_BOX, HOLIDAY_BOX)}
                       />
+                    ) : toggleMorning && day <= today && remoteLooking ? (
+                      <MorningToggleCell
+                        name={name}
+                        date={day}
+                        state={morning}
+                        toggle={toggleMorning}
+                      />
+                    ) : remoteLooking && morning === "present" ? (
+                      <div
+                        role="img"
+                        aria-label={`${name} ${day} 출근`}
+                        className={cn(CELL_BOX, TYPE_COLOR.출근)}
+                      />
+                    ) : remoteLooking && morning === "unconfirmed" ? (
+                      <div
+                        role="img"
+                        aria-label={`${name} ${day} 미확인`}
+                        title="미확인"
+                        className={cn(CELL_BOX, UNCONFIRMED_BOX)}
+                      >
+                        ?
+                      </div>
                     ) : record ? (
                       <AttendanceCell record={record} />
                     ) : plannedCells.has(`${name}|${day}`) &&
